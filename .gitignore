@@ -1,0 +1,14 @@
+node_modules/
+.env
+*.log
+.DS_Store
+keys/
+*.pem
+coverage/
+.vscode/
+.idea/
+dist/
+build/
+*.swp
+*.swo
+*~
