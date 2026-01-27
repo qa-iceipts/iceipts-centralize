@@ -107,7 +107,6 @@ async function generateAuthToken() {
  * Generate eWay Bill (NIC)
  */
 async function generateEwayBill(ewayData) {
-  try {
     logger.info('Generating NIC eWay Bill', {
       docNo: ewayData.docNo,
       vehicleNo: ewayData.vehicleNo
@@ -216,13 +215,6 @@ async function generateEwayBill(ewayData) {
     });
 
     return ewayResponse.data;
-  } catch (error) {
-    logger.error('NIC eWay Bill generation failed', {
-      error: error.message,
-      docNo: ewayData.docNo
-    });
-    throw error;
-  }
 }
 
 module.exports = {

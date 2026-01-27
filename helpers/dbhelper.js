@@ -21,6 +21,7 @@ async function testConnection() {
 async function syncDatabase(force = false) {
   try {
     await db.sequelize.sync({ force });
+    // await db.staticVehicleData.sync({ alter: true })
     logger.info(`Database synced successfully ${force ? '(forced)' : ''}`);
     return true;
   } catch (error) {

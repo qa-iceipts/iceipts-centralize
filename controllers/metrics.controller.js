@@ -1,4 +1,4 @@
-const { apiUsage } = require('../models');
+const { apiUsage, sequelize } = require('../models');
 const logger = require('../helpers/logger');
 const createHttpError = require('http-errors');
 const { Op } = require('sequelize');

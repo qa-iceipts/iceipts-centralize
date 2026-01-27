@@ -4,45 +4,134 @@ const logger = require('../../helpers/logger');
 const createHttpError = require('http-errors');
 
 /**
- * eInvoice API Service (Whitebooks)
+ * eInvoice API Service (Whitebooks) - Singleton Pattern with Token Management
  */
-
-/**
- * Authenticate with Whitebooks eInvoice API
- */
-async function authenticate() {
-  try {
-    const credentials = config.externalAPIs.einvoice.whitebooks;
+class EInvoiceService {
+  constructor() {
+    this.credentials = config.externalAPIs.einvoice.whitebooks;
+    this.authToken = null;
+    this.tokenExpiry = null;
     
-    const response = await axios.get(
-      `${credentials.url}/irnapi/v1.03/authenticate`,
-      {
-        params: {
-          email: credentials.email,
-          username: credentials.username,
-          password: credentials.password
-        },
-        headers: {
-          ip_address: credentials.ipAddress,
-          client_id: credentials.clientId,
-          client_secret: credentials.clientSecret,
-          gstin: credentials.gstin,
-          Accept: 'application/json'
-        },
-        timeout: credentials.timeout
-      }
-    );
+    logger.info('eInvoice service initialized', {
+      url: this.credentials.url,
+      gstin: this.credentials.gstin
+    });
+  }
 
-    if (response.data.status_cd != 1) {
-      throw new Error('Whitebooks eInvoice authentication failed: ' + response.data.status_desc);
+  /**
+   * Build headers for API requests (matching transport server pattern)
+   */
+  _buildHeaders(includeAuthToken = false) {
+    const headers = {
+      'accept': '*/*',
+      'ip_address': this.credentials.ipAddress,
+      'client_id': this.credentials.clientId,
+      'client_secret': this.credentials.clientSecret,
+      'username': this.credentials.username,
+      'password': this.credentials.password,
+      'gstin': this.credentials.gstin
+    };
+
+    if (includeAuthToken && this.authToken) {
+      headers['auth-token'] = this.authToken;
     }
 
-    logger.info('Whitebooks eInvoice authentication successful');
-    return response.data.data.AuthToken;
-  } catch (error) {
-    logger.error('Whitebooks eInvoice authentication failed', { error: error.message });
-    throw new createHttpError.Unauthorized('Failed to authenticate with Whitebooks eInvoice API');
+    return headers;
   }
+
+  /**
+   * Build query parameters for API requests (matching transport server pattern)
+   */
+  _buildQueryParams(includeAuthToken = false) {
+    const params = {
+      email: this.credentials.email,
+      username: this.credentials.username,
+      password: this.credentials.password,
+      ip_address: this.credentials.ipAddress,
+      client_id: this.credentials.clientId,
+      client_secret: this.credentials.clientSecret,
+      gstin: this.credentials.gstin
+    };
+
+    if (includeAuthToken && this.authToken) {
+      params['auth-token'] = this.authToken;
+    }
+
+    return params;
+  }
+
+  /**
+   * Check if current auth token is valid and not expired
+   */
+  isTokenValid() {
+    if (!this.authToken || !this.tokenExpiry) {
+      return false;
+    }
+    return new Date() < this.tokenExpiry;
+  }
+
+  /**
+   * Authenticate with Whitebooks eInvoice API
+   */
+  async authenticate() {
+    try {
+      logger.info('Authenticating with Whitebooks eInvoice API');
+
+      const response = await axios({
+        method: 'GET',
+        url: `${this.credentials.url}/einvoice/authenticate`,
+        headers: this._buildHeaders(false),
+        params: this._buildQueryParams(false),
+        timeout: this.credentials.timeout
+      });
+
+      if (response.data?.data?.AuthToken) {
+        this.authToken = response.data.data.AuthToken;
+        this.tokenExpiry = new Date(response.data.data.TokenExpiry);
+
+        logger.info('Whitebooks eInvoice authentication successful', {
+          expiresAt: this.tokenExpiry
+        });
+
+        return {
+          success: true,
+          authToken: this.authToken,
+          expiresAt: this.tokenExpiry
+        };
+      }
+
+      throw new createHttpError.ServiceUnavailable(
+        'eInvoice authentication failed: Invalid response structure'
+      );
+    } catch (error) {
+      logger.error('eInvoice authentication error', {
+        error: error.message,
+        response: error.response?.data
+      });
+      throw new createHttpError.ServiceUnavailable(
+        `eInvoice authentication failed: ${error.message}`
+      );
+    }
+  }
+
+  /**
+   * Ensure service is authenticated before making API calls
+   */
+  async ensureAuthenticated() {
+    if (!this.isTokenValid()) {
+      await this.authenticate();
+    }
+  }
+}
+
+// Singleton instance
+let serviceInstance = null;
+
+function getServiceInstance() {
+  if (!serviceInstance) {
+    serviceInstance = new EInvoiceService();
+  }
+  return serviceInstance;
 }
 
 /**
@@ -50,41 +139,37 @@ async function authenticate() {
  */
 async function generateEInvoice(invoiceData) {
   try {
-    logger.info('Generating eInvoice', { docNo: invoiceData.DocDtls?.No });
-
-    const credentials = config.externalAPIs.einvoice.whitebooks;
-    const authToken = await authenticate();
+    const service = getServiceInstance();
+    await service.ensureAuthenticated();
 
     const response = await axios.post(
-      `${credentials.url}/irnapi/genirn`,
+      `${service.credentials.url}/einvoice/type/GENERATE/version/V1_03`,
       invoiceData,
       {
-        params: {
-          email: credentials.email
-        },
         headers: {
-          ip_address: credentials.ipAddress,
-          client_id: credentials.clientId,
-          client_secret: credentials.clientSecret,
-          gstin: credentials.gstin,
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-          Authorization: `Bearer ${authToken}`
+          ...service._buildHeaders(true),
+          'Content-Type': 'application/json'
         },
-        timeout: credentials.timeout
+        params: {
+          email: service.credentials.email,
+          'auth-token': service.authToken
+        },
+        timeout: service.credentials.timeout
       }
     );
 
     if (response.data.status_cd != 1) {
-      throw new createHttpError.BadRequest(
-        'eInvoice generation failed: ' + (response.data.error?.message || 'Unknown error')
-      );
+      const errorMessage = response.data.error?.message || response.data.status_desc || 'Unknown error';
+      throw new createHttpError.BadRequest(`eInvoice generation failed: ${errorMessage}`);
     }
 
     logger.info('eInvoice generated successfully', { irn: response.data.data?.Irn });
     return response.data;
   } catch (error) {
-    logger.error('eInvoice generation failed', { error: error.message });
+    logger.error('Generate eInvoice error', {
+      error: error.message,
+      response: error.response?.data
+    });
     throw error;
   }
 }
@@ -94,10 +179,10 @@ async function generateEInvoice(invoiceData) {
  */
 async function cancelEInvoice(irn, cancelReason, cancelRemarks) {
   try {
-    logger.info('Canceling eInvoice', { irn });
+    const service = getServiceInstance();
+    await service.ensureAuthenticated();
 
-    const credentials = config.externalAPIs.einvoice.whitebooks;
-    const authToken = await authenticate();
+    logger.info('Canceling eInvoice', { irn });
 
     const payload = {
       Irn: irn,
@@ -106,35 +191,33 @@ async function cancelEInvoice(irn, cancelReason, cancelRemarks) {
     };
 
     const response = await axios.post(
-      `${credentials.url}/irnapi/cancelirn`,
+      `${service.credentials.url}/irnapi/cancelirn`,
       payload,
       {
-        params: {
-          email: credentials.email
-        },
         headers: {
-          ip_address: credentials.ipAddress,
-          client_id: credentials.clientId,
-          client_secret: credentials.clientSecret,
-          gstin: credentials.gstin,
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-          Authorization: `Bearer ${authToken}`
+          ...service._buildHeaders(true),
+          'Content-Type': 'application/json'
         },
-        timeout: credentials.timeout
+        params: {
+          email: service.credentials.email,
+          'auth-token': service.authToken
+        },
+        timeout: service.credentials.timeout
       }
     );
 
     if (response.data.status_cd != 1) {
-      throw new createHttpError.BadRequest(
-        'eInvoice cancellation failed: ' + (response.data.error?.message || 'Unknown error')
-      );
+      const errorMessage = response.data.error?.message || response.data.status_desc || 'Unknown error';
+      throw new createHttpError.BadRequest(`eInvoice cancellation failed: ${errorMessage}`);
     }
 
     logger.info('eInvoice cancelled successfully', { irn });
     return response.data;
   } catch (error) {
-    logger.error('eInvoice cancellation failed', { error: error.message, irn });
+    logger.error('Cancel eInvoice error', {
+      error: error.message,
+      response: error.response?.data
+    });
     throw error;
   }
 }
@@ -144,37 +227,37 @@ async function cancelEInvoice(irn, cancelReason, cancelRemarks) {
  */
 async function getEInvoiceByIRN(irn) {
   try {
+    const service = getServiceInstance();
+    await service.ensureAuthenticated();
+
     logger.info('Getting eInvoice by IRN', { irn });
 
-    const credentials = config.externalAPIs.einvoice.whitebooks;
-    const authToken = await authenticate();
-
     const response = await axios.get(
-      `${credentials.url}/irnapi/getirn`,
+      `${service.credentials.url}/irnapi/getirn`,
       {
+        headers: service._buildHeaders(true),
         params: {
-          email: credentials.email,
-          irn: irn
+          email: service.credentials.email,
+          irn: irn,
+          'auth-token': service.authToken
         },
-        headers: {
-          ip_address: credentials.ipAddress,
-          client_id: credentials.clientId,
-          client_secret: credentials.clientSecret,
-          gstin: credentials.gstin,
-          Accept: 'application/json',
-          Authorization: `Bearer ${authToken}`
-        },
-        timeout: credentials.timeout
+        timeout: service.credentials.timeout
       }
     );
 
     if (response.data.status_cd != 1) {
-      throw new createHttpError.NotFound('eInvoice not found');
+      const errorMessage = response.data.error?.message || response.data.status_desc || 'eInvoice not found';
+      throw new createHttpError.NotFound(errorMessage);
     }
 
+    logger.info('eInvoice retrieved successfully by IRN', { irn });
     return response.data;
   } catch (error) {
-    logger.error('Get eInvoice by IRN failed', { error: error.message, irn });
+    logger.error('Get eInvoice by IRN failed', {
+      error: error.message,
+      irn,
+      response: error.response?.data
+    });
     throw error;
   }
 }
@@ -184,45 +267,47 @@ async function getEInvoiceByIRN(irn) {
  */
 async function getEInvoiceByDocDetails(docType, docNo, docDate) {
   try {
+    const service = getServiceInstance();
+    await service.ensureAuthenticated();
+
     logger.info('Getting eInvoice by document details', { docType, docNo, docDate });
 
-    const credentials = config.externalAPIs.einvoice.whitebooks;
-    const authToken = await authenticate();
-
     const response = await axios.get(
-      `${credentials.url}/irnapi/getdetails`,
+      `${service.credentials.url}/irnapi/getdetails`,
       {
+        headers: service._buildHeaders(true),
         params: {
-          email: credentials.email,
+          email: service.credentials.email,
           doctype: docType,
           docno: docNo,
-          docdate: docDate
+          docdate: docDate,
+          'auth-token': service.authToken
         },
-        headers: {
-          ip_address: credentials.ipAddress,
-          client_id: credentials.clientId,
-          client_secret: credentials.clientSecret,
-          gstin: credentials.gstin,
-          Accept: 'application/json',
-          Authorization: `Bearer ${authToken}`
-        },
-        timeout: credentials.timeout
+        timeout: service.credentials.timeout
       }
     );
 
     if (response.data.status_cd != 1) {
-      throw new createHttpError.NotFound('eInvoice not found');
+      const errorMessage = response.data.error?.message || response.data.status_desc || 'eInvoice not found';
+      throw new createHttpError.NotFound(errorMessage);
     }
 
+    logger.info('eInvoice retrieved successfully by document details', { docType, docNo, docDate });
     return response.data;
   } catch (error) {
-    logger.error('Get eInvoice by document details failed', { error: error.message });
+    logger.error('Get eInvoice by document details failed', {
+      error: error.message,
+      docType,
+      docNo,
+      docDate,
+      response: error.response?.data
+    });
     throw error;
   }
 }
 
 module.exports = {
-  authenticate,
+  getServiceInstance,
   generateEInvoice,
   cancelEInvoice,
   getEInvoiceByIRN,

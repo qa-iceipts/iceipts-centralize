@@ -1,69 +1,90 @@
-'use strict';
+"use strict";
+const { Model } = require("sequelize");
 
 module.exports = (sequelize, DataTypes) => {
-  const Drivers = sequelize.define('drivers', {
-    id: {
-      type: DataTypes.INTEGER,
-      primaryKey: true,
-      autoIncrement: true
-    },
-    dlNumber: {
-      type: DataTypes.STRING(50),
-      allowNull: false,
-      unique: true
-    },
-    fullName: {
-      type: DataTypes.STRING(255),
-      allowNull: true
-    },
-    mobile: {
-      type: DataTypes.STRING(20),
-      allowNull: true
-    },
-    dob: {
-      type: DataTypes.DATEONLY,
-      allowNull: true
-    },
-    address: {
-      type: DataTypes.TEXT,
-      allowNull: true
-    },
-    city: {
-      type: DataTypes.STRING(100),
-      allowNull: true
-    },
-    state: {
-      type: DataTypes.STRING(100),
-      allowNull: true
-    },
-    pincode: {
-      type: DataTypes.STRING(10),
-      allowNull: true
-    },
-    driverImage: {
-      type: DataTypes.TEXT,
-      allowNull: true
-    },
-    validFrom: {
-      type: DataTypes.DATEONLY,
-      allowNull: true
-    },
-    validTo: {
-      type: DataTypes.DATEONLY,
-      allowNull: true
-    },
-    licenseClass: {
-      type: DataTypes.STRING(100),
-      allowNull: true
-    },
-    isActive: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: true
+  class drivers extends Model {
+    /**
+     * Helper method for defining associations.
+     * This method is not a part of Sequelize lifecycle.
+     * The `models/index` file will call this method automatically.
+     */
+    static associate(models) {
+      // drivers.hasMany(models.vehicleDetails, { onDelete: "CASCADE" });
     }
-  }, {
-    tableName: 'drivers',
-    timestamps: true
-  });
+  }
+  drivers.init(
+    {
+      id: {
+        type: DataTypes.UUID,
+        primaryKey: true,
+        allowNull: false,
+        defaultValue: DataTypes.UUIDV4,
+      },
+      driverImage: {
+        type: DataTypes.TEXT,
+      },
+      dlNumber: {
+        type: DataTypes.STRING,
+      },
+      fullName: {
+        type: DataTypes.STRING,
+      },
+      email: {
+        type: DataTypes.STRING,
+      },
+      mobile: {
+        type: DataTypes.STRING,
+      },
+      address: {
+        type: DataTypes.STRING,
+      },
+      joiningDate: {
+        type: DataTypes.DATE,
+      },
+      salary: {
+        type: DataTypes.DOUBLE,
+      },
+      gender: {
+        type: DataTypes.STRING,
+      },
+      assets: {
+        type: DataTypes.STRING,
+      },
+      assignVehicle: {
+        type: DataTypes.STRING,
+      },
+      uploadAadharCard: {
+        type: DataTypes.STRING,
+      },
+      uploadDrivingLic: {
+        type: DataTypes.STRING,
+      },
+      userId: {
+        type: DataTypes.STRING,
+      },
+      pan: {
+        type: DataTypes.STRING,
+      },
+      isDeleted: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+      },
+      dob: {
+        type: DataTypes.DATE,
+      },
+      dlValidUpto: {
+        type: DataTypes.DATE,
+      },
+    },
+    {
+      sequelize,
+      modelName: "drivers",
+      defaultScope: {
+        // exclude password hash by default
+        attributes: { exclude: ["createdAt", "updatedAt"] },
+      },
+    }
+  );
 
-  return Drivers;
+  return drivers;
 };

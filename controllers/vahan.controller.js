@@ -8,73 +8,50 @@ const dlValidation = require('../services/api-gateway/vahan/dl-validation.servic
  * Get vehicle RC details from local database
  */
 exports.getVehicleFromDB = async (req, res, next) => {
-  try {
-    const { vehicleNumber } = req.params;
-    
-    const vehicle = await staticVehicleData.findOne({
-      where: { truckNo: vehicleNumber }
-    });
 
-    if (!vehicle) {
-      throw new createHttpError.NotFound('Vehicle not found in local database');
-    }
+  const { vehicleNumber } = req.params;
 
-    return res.sendResponse(vehicle, 'Vehicle found in local database');
-  } catch (error) {
-    logger.error('Get vehicle from DB error', {
-      service: 'vahan-controller',
-      error: error.message
-    });
-    next(error);
+  const vehicle = await staticVehicleData.findOne({
+    where: { truckNo: vehicleNumber }
+  });
+
+  if (!vehicle) {
+    throw new createHttpError.NotFound('Vehicle not found in local database');
   }
+
+  return res.sendResponse(vehicle, 'Vehicle found in local database');
 };
 
 /**
  * Get driver DL details from local database
  */
 exports.getDriverFromDB = async (req, res, next) => {
-  try {
-    const { dlNumber } = req.params;
-    
-    const driver = await drivers.findOne({
-      where: { dlNumber }
-    });
+  const { dlNumber } = req.params;
 
-    if (!driver) {
-      throw new createHttpError.NotFound('Driver not found in local database');
-    }
+  const driver = await drivers.findOne({
+    where: { dlNumber }
+  });
 
-    return res.sendResponse(driver, 'Driver found in local database');
-  } catch (error) {
-    logger.error('Get driver from DB error', {
-      service: 'vahan-controller',
-      error: error.message
-    });
-    next(error);
+  if (!driver) {
+    throw new createHttpError.NotFound('Driver not found in local database');
   }
+
+  return res.sendResponse(driver, 'Driver found in local database');
 };
 
 /**
  * Validate vehicle RC via VAHAN API
  */
 exports.validateVehicleRC = async (req, res, next) => {
-  try {
-    const { vehicleNumber } = req.body;
-    
-    if (!vehicleNumber) {
-      throw new createHttpError.BadRequest('vehicleNumber is required');
-    }
+  const { vehicleNumber } = req.body;
 
-    const result = await rcValidation.validateRC(vehicleNumber);
-    
-    return res.sendResponse(result, 'Vehicle RC validated successfully');
-  } catch (error) {
-    logger.error('Validate vehicle RC error', {
-      service: 'vahan-controller',
-      error: error.message
-    });
-    next(error);
+  if (!vehicleNumber) {
+    throw new createHttpError.BadRequest('vehicleNumber is required');
   }
+
+  const result = await rcValidation.validateRC(vehicleNumber);
+
+  return res.sendResponse(result, 'Vehicle RC validated successfully');
 };
 
 /**
@@ -83,13 +60,13 @@ exports.validateVehicleRC = async (req, res, next) => {
 exports.validateDL = async (req, res, next) => {
   try {
     const { dlNumber } = req.body;
-    
+
     if (!dlNumber) {
       throw new createHttpError.BadRequest('dlNumber is required');
     }
 
     const result = await dlValidation.validateDL(dlNumber);
-    
+
     return res.sendResponse(result, 'Driving license validated successfully');
   } catch (error) {
     logger.error('Validate DL error', {
@@ -106,7 +83,7 @@ exports.validateDL = async (req, res, next) => {
 exports.saveVehicleData = async (req, res, next) => {
   try {
     const vehicleData = req.body;
-    
+
     if (!vehicleData.truckNo) {
       throw new createHttpError.BadRequest('truckNo is required');
     }
@@ -139,7 +116,7 @@ exports.saveVehicleData = async (req, res, next) => {
 exports.saveDriverData = async (req, res, next) => {
   try {
     const driverData = req.body;
-    
+
     if (!driverData.dlNumber) {
       throw new createHttpError.BadRequest('dlNumber is required');
     }

@@ -44,4 +44,31 @@ const logger = winston.createLogger({
   ]
 });
 
+// Add custom logging methods for HTTP requests/responses
+logger.logRequest = function(req) {
+  this.info('Incoming request', {
+    method: req.method,
+    path: req.path,
+    ip: req.ip,
+    dispatcher: req.headers['x-dispatcher-id']
+  });
+};
+
+logger.logResponse = function(req, res, responseTime) {
+  const logData = {
+    method: req.method,
+    path: req.path,
+    statusCode: res.statusCode,
+    responseTime: `${responseTime}ms`,
+    ip: req.ip,
+    dispatcher: req.headers['x-dispatcher-id']
+  };
+
+  if (res.statusCode >= 400) {
+    this.error('Request failed', logData);
+  } else {
+    this.info('Request completed', logData);
+  }
+};
+
 module.exports = logger;

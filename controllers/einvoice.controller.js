@@ -6,28 +6,15 @@ const einvoiceService = require('../services/api-gateway/einvoice.service');
  * Generate eInvoice
  */
 exports.generateEInvoice = async (req, res, next) => {
-  try {
     const { invoiceData } = req.body;
 
     if (!invoiceData) {
       throw new createHttpError.BadRequest('invoiceData is required');
     }
 
-    logger.info('Generating eInvoice', {
-      docNo: invoiceData.DocDtls?.No,
-      dispatcher: req.dispatcher?.dispatcherId
-    });
-
     const result = await einvoiceService.generateEInvoice(invoiceData);
     
     return res.sendResponse(result, 'eInvoice generated successfully');
-  } catch (error) {
-    logger.error('Generate eInvoice error', {
-      service: 'einvoice-controller',
-      error: error.message
-    });
-    next(error);
-  }
 };
 
 /**

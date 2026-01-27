@@ -2,55 +2,64 @@ require('dotenv').config();
 
 module.exports = {
   server: {
-    port: process.env.PORT || 8080,
-    env: process.env.NODE_ENV || 'development'
+    port: parseInt(process.env.PORT) || 5000,
+    env: process.env.NODE_ENV || 'test'
   },
 
   externalAPIs: {
     vahan: {
-      baseURL: process.env.VAHAN_API_URL || 'https://vahan.parivahan.gov.in',
-      clientId: process.env.VAHAN_CLIENT_ID,
-      clientSecret: process.env.VAHAN_CLIENT_SECRET,
-      timeout: parseInt(process.env.VAHAN_TIMEOUT) || 30000,
-      publicKeyPath: process.env.VAHAN_PUBLIC_KEY_PATH || './keys/vahan/public.pem',
-      privateKeyPath: process.env.VAHAN_PRIVATE_KEY_PATH || './keys/vahan/private.pem'
+      baseURL: process.env.VAHAN_URL_API || 'https://uat.risewithprotean.io/api/v1',
+      url: process.env.VAHAN_URL || 'https://uat.risewithprotean.io/v1',
+      apiKey: process.env.VAHANAPIKEY,
+      secretKey: process.env.VAHAN_SECRET_KEY,
+      ssKey: process.env.VAHAN_SSKEY,
+      env: process.env.VAHANENV || 'UAT',
+      timeout: 30000,
+      publicKeyPath: './keys/vahan/public.pem',
+      privateKeyPath: './keys/vahan/private.pem'
     },
-    
+
     eway: {
       nic: {
-        url: process.env.NIC_EWAY_API_URL || 'https://ewaybillapi.nic.in/ewb/',
-        username: process.env.NIC_EWAY_USERNAME,
-        password: process.env.NIC_EWAY_PASSWORD,
-        aspId: process.env.NIC_ASP_ID,
-        gstin: process.env.NIC_GSTIN,
-        privateKeyPath: process.env.NIC_PRIVATE_KEY_PATH || './keys/eway/private.pem',
-        publicKeyPath: process.env.NIC_PUBLIC_KEY_PATH || './keys/eway/public.pem',
-        timeout: parseInt(process.env.NIC_EWAY_TIMEOUT) || 30000
+        url: process.env.EWAY_API_URL || 'https://test.proteangsp.co.in/gus/ewb/ewaybillapi',
+        username: process.env.EWAY_USERNAME,
+        password: process.env.EWAY_PASSWORD,
+        aspId: process.env.ASP_ID,
+        gstin: process.env.EWAY_GSTIN,
+        txnId: process.env.EWAY_TXN_ID,
+        passphrase: process.env.EWAY_PASSPHRASE,
+        env: process.env.EWAYENV || 'UAT',
+        privateKeyPath: './keys/eway/private.pem',
+        publicKeyPath: './keys/eway/public.pem',
+        timeout: 30000
       },
+      
       whitebooks: {
-        url: process.env.WHITEBOOKS_EWAY_API_URL || 'https://apitest.whitebooks.co.in',
-        email: process.env.WHITEBOOKS_EMAIL,
-        username: process.env.WHITEBOOKS_USERNAME,
-        password: process.env.WHITEBOOKS_PASSWORD,
-        ipAddress: process.env.WHITEBOOKS_IP_ADDRESS,
-        clientId: process.env.WHITEBOOKS_CLIENT_ID,
-        clientSecret: process.env.WHITEBOOKS_CLIENT_SECRET,
-        gstin: process.env.WHITEBOOKS_GSTIN,
-        timeout: parseInt(process.env.WHITEBOOKS_EWAY_TIMEOUT) || 30000
+        url: process.env.EWAY_WHITEBOOKS_URL || 'https://apisandbox.whitebooks.in/ewaybillapi/v1.03',
+        email: process.env.EWAY_WHITEBOOKS_EMAIL,
+        username: process.env.EWAY_WHITEBOOKS_USERNAME,
+        password: process.env.EWAY_WHITEBOOKS_PASSWORD,
+        ipAddress: process.env.EWAY_WHITEBOOKS_IP,
+        clientId: process.env.EWAY_WHITEBOOKS_CLIENT_ID,
+        clientSecret: process.env.EWAY_WHITEBOOKS_CLIENT_SECRET,
+        gstin: process.env.EWAY_WHITEBOOKS_GSTIN,
+        env: process.env.EWAY_WHITEBOOKS_ENV || 'sandbox',
+        timeout: 30000
       }
     },
 
     einvoice: {
       whitebooks: {
-        url: process.env.WHITEBOOKS_EINVOICE_API_URL || 'https://apitest.whitebooks.co.in',
-        email: process.env.WHITEBOOKS_EMAIL,
-        username: process.env.WHITEBOOKS_EINVOICE_USERNAME,
-        password: process.env.WHITEBOOKS_EINVOICE_PASSWORD,
-        ipAddress: process.env.WHITEBOOKS_IP_ADDRESS,
-        clientId: process.env.WHITEBOOKS_CLIENT_ID,
-        clientSecret: process.env.WHITEBOOKS_CLIENT_SECRET,
-        gstin: process.env.WHITEBOOKS_GSTIN,
-        timeout: parseInt(process.env.WHITEBOOKS_EINVOICE_TIMEOUT) || 30000
+        url: 'https://apisandbox.whitebooks.in',
+        email: process.env.EINVOICE_EMAIL,
+        username: process.env.EINVOICE_USERNAME,
+        password: process.env.EINVOICE_PASSWORD,
+        ipAddress: process.env.EINVOICE_IP_ADDRESS,
+        clientId: process.env.EINVOICE_CLIENT_ID,
+        clientSecret: process.env.EINVOICE_CLIENT_SECRET,
+        gstin: process.env.EINVOICE_GSTIN,
+        env: process.env.EINVOICE_ENV || 'sandbox',
+        timeout: 30000
       }
     }
   },
