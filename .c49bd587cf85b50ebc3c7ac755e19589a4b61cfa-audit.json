@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 14
+    },
+    "auditLog": "E:\\Iceipts\\gvpr-backend\\central-gateway-service\\.c49bd587cf85b50ebc3c7ac755e19589a4b61cfa-audit.json",
+    "files": [
+        {
+            "date": 1769509757136,
+            "name": "E:\\Iceipts\\gvpr-backend\\central-gateway-service\\combined-2026-01-27.log",
+            "hash": "75101ad2f4efccf2923c19b3108d5e51863d3a87480db024dac3c64e14b9a1ec"
+        }
+    ],
+    "hashType": "sha256"
+}
