@@ -56,6 +56,10 @@ module.exports = (sequelize, DataTypes) => {
       },
       vehicleInsuranceUpto: {
         type: DataTypes.TEXT,
+      },
+      fullDataJson: {
+        type: DataTypes.JSON,
+        defaultValue: {},
       }
     },
     {

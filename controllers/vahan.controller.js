@@ -44,12 +44,13 @@ exports.getDriverFromDB = async (req, res, next) => {
  */
 exports.validateVehicleRC = async (req, res, next) => {
   const { vehicleNumber } = req.body;
+  const dispatcherId = req.body.dispatcherId || req.dispatcher?.id || 'system';
 
   if (!vehicleNumber) {
     throw new createHttpError.BadRequest('vehicleNumber is required');
   }
 
-  const result = await rcValidation.validateRC(vehicleNumber);
+  const result = await rcValidation.validateRC(vehicleNumber, dispatcherId);
 
   return res.sendResponse(result, 'Vehicle RC validated successfully');
 };
@@ -60,12 +61,13 @@ exports.validateVehicleRC = async (req, res, next) => {
 exports.validateDL = async (req, res, next) => {
   try {
     const { dlNumber } = req.body;
+    const dispatcherId = req.body.dispatcherId || req.dispatcher?.id || 'system';
 
     if (!dlNumber) {
       throw new createHttpError.BadRequest('dlNumber is required');
     }
 
-    const result = await dlValidation.validateDL(dlNumber);
+    const result = await dlValidation.validateDL(dlNumber, dispatcherId);
 
     return res.sendResponse(result, 'Driving license validated successfully');
   } catch (error) {
