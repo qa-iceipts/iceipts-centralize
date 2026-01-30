@@ -10,6 +10,8 @@ const bodyParser = require("body-parser");
 const config = require("./config/gateway.config");
 const logger = require("./helpers/logger");
 const { notFoundHandler, globalErrorHandler } = require("./middleware/error.handler");
+//call db helper to initialize DB connection
+require("./helpers/dbhelper");
 
 logger.info("Starting Central Gateway Service...");
 

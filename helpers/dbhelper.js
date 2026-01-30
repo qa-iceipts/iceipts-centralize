@@ -1,69 +1,30 @@
-const db = require('../models');
 const logger = require('./logger');
+const env = process.env.NODE_ENV || 'development';
+const config = require('../config/config')[env];
+const mysql = require('mysql2/promise');
 
-/**
- * Test database connection
- */
-async function testConnection() {
-  try {
-    await db.sequelize.authenticate();
-    logger.info('Database connection established successfully');
-    return true;
-  } catch (error) {
-    logger.error('Unable to connect to database', { error: error.message });
-    return false;
-  }
-}
+module.exports = (async function initialize() {
+  logger.info('Initializing database...', { env });
 
-/**
- * Sync database models
- */
-async function syncDatabase(force = false) {
-  try {
-    await db.sequelize.sync({ force });
-    // await db.staticVehicleData.sync({ alter: true })
-    logger.info(`Database synced successfully ${force ? '(forced)' : ''}`);
-    return true;
-  } catch (error) {
-    logger.error('Database sync failed', { error: error.message });
-    return false;
-  }
-}
+  // Create database if it doesn't exist
+  const connection = await mysql.createConnection({
+    host: config.host,
+    port: config.port,
+    user: config.username,
+    password: config.password
+  });
+  await connection.query(`CREATE DATABASE IF NOT EXISTS \`${config.database}\`;`);
 
-/**
- * Close database connection
- */
-async function closeConnection() {
-  try {
-    await db.sequelize.close();
-    logger.info('Database connection closed');
-    return true;
-  } catch (error) {
-    logger.error('Error closing database connection', { error: error.message });
-    return false;
-  }
-}
+  const db = require('../models');
 
-/**
- * Log API usage
- */
-async function logAPIUsage(dispatcherId, apiType, endpoint, status, responseTime) {
-  try {
-    await db.apiUsage.create({
-      dispatcherId,
-      apiType,
-      endpoint,
-      status,
-      responseTime
-    });
-  } catch (error) {
-    logger.error('Failed to log API usage', { error: error.message });
-  }
-}
+  // Authenticate
+  await db.sequelize.authenticate();
+  logger.info('Database authenticated successfully');
 
-module.exports = {
-  testConnection,
-  syncDatabase,
-  closeConnection,
-  logAPIUsage
-};
+  // Sync all models with database
+  await db.sequelize.sync({ force: false });
+  // await db.staticVehicleData.sync({ alter: true });
+  logger.info('Database synced successfully');
+
+  return db;
+})();
