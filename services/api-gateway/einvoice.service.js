@@ -191,7 +191,7 @@ async function cancelEInvoice(irn, cancelReason, cancelRemarks) {
     };
 
     const response = await axios.post(
-      `${service.credentials.url}/irnapi/cancelirn`,
+      `${service.credentials.url}/einvoice/type/CANCEL/version/V1_03`,
       payload,
       {
         headers: {
@@ -216,7 +216,9 @@ async function cancelEInvoice(irn, cancelReason, cancelRemarks) {
   } catch (error) {
     logger.error('Cancel eInvoice error', {
       error: error.message,
-      response: error.response?.data
+      requestPayload: { Irn: irn, CnlRsn: cancelReason, CnlRem: cancelRemarks },
+      response: error.response?.data,
+      fullResponse: error.response?.data ? JSON.stringify(error.response.data) : null
     });
     throw error;
   }
@@ -233,12 +235,12 @@ async function getEInvoiceByIRN(irn) {
     logger.info('Getting eInvoice by IRN', { irn });
 
     const response = await axios.get(
-      `${service.credentials.url}/irnapi/getirn`,
+      `${service.credentials.url}/einvoice/type/GETIRN/version/V1_03`,
       {
         headers: service._buildHeaders(true),
         params: {
+          param1: irn,
           email: service.credentials.email,
-          irn: irn,
           'auth-token': service.authToken
         },
         timeout: service.credentials.timeout
@@ -273,14 +275,16 @@ async function getEInvoiceByDocDetails(docType, docNo, docDate) {
     logger.info('Getting eInvoice by document details', { docType, docNo, docDate });
 
     const response = await axios.get(
-      `${service.credentials.url}/irnapi/getdetails`,
+      `${service.credentials.url}/einvoice/type/GETIRNBYDOCDETAILS/version/V1_03`,
       {
-        headers: service._buildHeaders(true),
+        headers: {
+          ...service._buildHeaders(true),
+          docnum: docNo,
+          docdate: docDate
+        },
         params: {
+          param1: docType,
           email: service.credentials.email,
-          doctype: docType,
-          docno: docNo,
-          docdate: docDate,
           'auth-token': service.authToken
         },
         timeout: service.credentials.timeout

@@ -50,7 +50,7 @@ module.exports = {
 
     einvoice: {
       whitebooks: {
-        url: 'https://apisandbox.whitebooks.in',
+        url: process.env.EINVOICE_WHITEBOOKS_URL || 'https://apisandbox.whitebooks.in',
         email: process.env.EINVOICE_EMAIL,
         username: process.env.EINVOICE_USERNAME,
         password: process.env.EINVOICE_PASSWORD,

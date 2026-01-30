@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Test Dashboard - Central Gateway Service</title>
+    <link rel="stylesheet" href="css/test-page.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚀 Central Gateway Service</h1>
+            <p style="margin: 10px 0; font-size: 1.1em; opacity: 0.95;">API Test Dashboard</p>
+            <p class="warning">⚠️ Development Environment Only</p>
+        </header>
+
+        <!-- Tab Navigation -->
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="vahan">🚗 VAHAN APIs</button>
+            <button class="tab-btn" data-tab="eway">📦 eWay Bill APIs</button>
+            <button class="tab-btn" data-tab="einvoice">🧾 eInvoice APIs</button>
+        </div>
+
+        <!-- VAHAN Tab Content -->
+        <div id="vahan" class="tab-content active">
+            <h2>🚗 VAHAN API Testing</h2>
+            <p style="color: #64748b; margin-bottom: 30px; font-size: 0.95em;">Test vehicle and driver license validation endpoints</p>
+
+            <!-- Validate Vehicle RC -->
+            <section class="api-section">
+                <h3>Validate Vehicle RC</h3>
+                <form id="vahan-validate-vehicle">
+                    <label>Vehicle Number:</label>
+                    <input type="text" name="vehicleNumber" placeholder="MH12AB1234" required>
+                    <button type="submit">Validate</button>
+                </form>
+                <pre class="response" id="vahan-validate-vehicle-response"></pre>
+            </section>
+
+            <!-- Validate DL -->
+            <section class="api-section">
+                <h3>Validate Driving License</h3>
+                <form id="vahan-validate-dl">
+                    <label>DL Number:</label>
+                    <input type="text" name="dlNumber" placeholder="MH1234567890123" required>
+                    <button type="submit">Validate</button>
+                </form>
+                <pre class="response" id="vahan-validate-dl-response"></pre>
+            </section>
+
+            <!-- Save Vehicle -->
+            <section class="api-section">
+                <h3>Save Vehicle Data</h3>
+                <form id="vahan-save-vehicle">
+                    <label>Vehicle Data (JSON):</label>
+                    <textarea name="vehicleData" rows="8" placeholder='{"truckNo": "MH12AB1234", "truckOwner": "John Doe", "address": "123 Main St", "pincode": "400001", "state": "Maharashtra", "city": "Mumbai", "type": "Truck", "phoneNumber": "9876543210", "rcBook": true, "fitnessCertificate": true, "puccValidUpto": "2025-12-31", "rcExpiryDate": "2026-12-31", "vehicleInsuranceUpto": "2025-06-30"}'></textarea>
+                    <button type="submit">Save</button>
+                </form>
+                <pre class="response" id="vahan-save-vehicle-response"></pre>
+            </section>
+
+            <!-- Get Vehicle from DB -->
+            <section class="api-section">
+                <h3>Get Vehicle from Database</h3>
+                <form id="vahan-get-vehicle">
+                    <label>Vehicle Number:</label>
+                    <input type="text" name="vehicleNumber" placeholder="MH12AB1234" required>
+                    <button type="submit">Get</button>
+                </form>
+                <pre class="response" id="vahan-get-vehicle-response"></pre>
+            </section>
+
+            <!-- Save Driver -->
+            <section class="api-section">
+                <h3>Save Driver Data</h3>
+                <form id="vahan-save-driver">
+                    <label>Driver Data (JSON):</label>
+                    <textarea name="driverData" rows="8" placeholder='{"dlNumber": "MH1234567890123", "fullName": "John Doe", "email": "john@example.com", "mobile": "9876543210", "address": "123 Main St", "joiningDate": "2024-01-01", "salary": 25000, "gender": "Male", "dob": "1990-01-01", "dlValidUpto": "2025-12-31"}'></textarea>
+                    <button type="submit">Save</button>
+                </form>
+                <pre class="response" id="vahan-save-driver-response"></pre>
+            </section>
+
+            <!-- Get Driver from DB -->
+            <section class="api-section">
+                <h3>Get Driver from Database</h3>
+                <form id="vahan-get-driver">
+                    <label>DL Number:</label>
+                    <input type="text" name="dlNumber" placeholder="MH1234567890123" required>
+                    <button type="submit">Get</button>
+                </form>
+                <pre class="response" id="vahan-get-driver-response"></pre>
+            </section>
+        </div>
+
+        <!-- eWay Bill Tab Content -->
+        <div id="eway" class="tab-content">
+            <h2>📦 eWay Bill API Testing</h2>
+            <p style="color: #64748b; margin-bottom: 30px; font-size: 0.95em;">Generate, cancel, and extend e-Way bills for goods transport</p>
+
+            <!-- Generate eWay Bill -->
+            <section class="api-section">
+                <h3>Generate eWay Bill</h3>
+                <form id="eway-generate">
+                    <label>eWay Data (JSON):</label>
+                    <textarea name="ewayData" rows="20">{
+  "supplyType": "O",
+  "subSupplyType": "1",
+  "subSupplyDesc": " ",
+  "docType": "INV",
+  "docNo": "INV/455/2026",
+  "docDate": "21/01/2026",
+  "fromGstin": "29AAGCB1286Q000",
+  "fromTrdName": "welton",
+  "fromAddr1": "2ND CROSS NO 59 19 A",
+  "fromAddr2": "GROUND FLOOR OSBORNE ROAD",
+  "fromPlace": "FRAZER TOWN",
+  "actFromStateCode": 29,
+  "fromPincode": 560001,
+  "fromStateCode": 29,
+  "toGstin": "05AAACH6188F1ZM",
+  "toTrdName": "sthuthya",
+  "toAddr1": "Shree Nilaya",
+  "toAddr2": "Dasarahosahalli",
+  "toPlace": "Beml Nagar",
+  "toPincode": 263652,
+  "actToStateCode": 5,
+  "toStateCode": 5,
+  "transactionType": 4,
+  "dispatchFromGSTIN": "29AAAAA1303P1ZV",
+  "dispatchFromTradeName": "ABC Traders",
+  "shipToGSTIN": "29ALSPR1722R1Z3",
+  "shipToTradeName": "XYZ Traders",
+  "totalValue": 56099,
+  "cgstValue": 0,
+  "sgstValue": 0,
+  "igstValue": 300.67,
+  "cessValue": 400.56,
+  "cessNonAdvolValue": 400,
+  "totInvValue": 57200.23,
+  "transMode": "1",
+  "transDistance": "2487",
+  "transporterName": "",
+  "transporterId": "05AAACG0904A1ZL",
+  "transDocNo": "12",
+  "transDocDate": "",
+  "vehicleNo": "APR3214",
+  "vehicleType": "R",
+  "itemList": [
+    {
+      "productName": "Wheat",
+      "productDesc": "Wheat",
+      "hsnCode": 1001,
+      "quantity": 4,
+      "qtyUnit": "BOX",
+      "taxableAmount": 56099,
+      "sgstRate": 0,
+      "cgstRate": 0,
+      "igstRate": 3,
+      "cessRate": 0
+    }
+  ]
+}</textarea>
+                    <label>
+                        <input type="checkbox" name="isMasterEway">
+                        Use NIC eWay (Master eWay) - Uncheck for Whitebooks
+                    </label>
+                    <button type="submit">Generate</button>
+                </form>
+                <pre class="response" id="eway-generate-response"></pre>
+            </section>
+
+            <!-- Cancel eWay Bill -->
+            <section class="api-section">
+                <h3>Cancel eWay Bill</h3>
+                <form id="eway-cancel">
+                    <label>eWay Bill Number:</label>
+                    <input type="text" name="ewayBillNo" placeholder="123456789012" required>
+                    <label>Cancel Reason:</label>
+                    <select name="cancelReason" required>
+                        <option value="">Select reason...</option>
+                        <option value="1">Duplicate</option>
+                        <option value="2">Order Cancelled</option>
+                        <option value="3">Data Entry Mistake</option>
+                        <option value="4">Others</option>
+                    </select>
+                    <label>Cancel Remarks:</label>
+                    <input type="text" name="cancelRemarks" placeholder="Optional remarks">
+                    <label>
+                        <input type="checkbox" name="isMasterEway">
+                        Use NIC eWay (Master eWay)
+                    </label>
+                    <button type="submit">Cancel</button>
+                </form>
+                <pre class="response" id="eway-cancel-response"></pre>
+            </section>
+
+            <!-- Extend eWay Bill -->
+            <section class="api-section">
+                <h3>Extend eWay Bill Validity</h3>
+                <form id="eway-extend">
+                    <label>eWay Bill Number:</label>
+                    <input type="text" name="ewayBillNo" placeholder="123456789012" required>
+                    <label>Extension Data (JSON):</label>
+                    <textarea name="extensionData" rows="18">{
+  "ewbNo": "123456789012",
+  "vehicleNo": "KA12AB1234",
+  "fromPlace": "BANGALORE",
+  "fromState": 29,
+  "fromPincode": 560001,
+  "remainingDistance": 500,
+  "transDocNo": "TRANS/001/2026",
+  "transDocDate": "21/01/2026",
+  "transMode": "1",
+  "extnRsnCode": "4",
+  "extnRemarks": "Vehicle breakdown on highway",
+  "consignmentStatus": "M",
+  "transitType": "",
+  "addressLine1": "New Loading Point",
+  "addressLine2": "Industrial Area",
+  "addressLine3": ""
+}</textarea>
+                    <button type="submit">Extend</button>
+                </form>
+                <pre class="response" id="eway-extend-response"></pre>
+            </section>
+        </div>
+
+        <!-- eInvoice Tab Content -->
+        <div id="einvoice" class="tab-content">
+            <h2>🧾 eInvoice API Testing</h2>
+            <p style="color: #64748b; margin-bottom: 30px; font-size: 0.95em;">Generate and manage GST-compliant electronic invoices</p>
+
+            <!-- Generate eInvoice -->
+            <section class="api-section">
+                <h3>Generate eInvoice</h3>
+                <form id="einvoice-generate">
+                    <label>Invoice Data (JSON):</label>
+                    <textarea name="invoiceData" rows="45">{
+  "Version": "1.1",
+  "TranDtls": {
+    "TaxSch": "GST",
+    "SupTyp": "B2B",
+    "RegRev": "N",
+    "EcmGstin": null,
+    "IgstOnIntra": "N"
+  },
+  "DocDtls": {
+    "Typ": "INV",
+    "No": "einv/455/2026",
+    "Dt": "27/01/2026"
+  },
+  "SellerDtls": {
+    "Gstin": "29AAGCB1286Q000",
+    "LglNm": "ABC company pvt ltd",
+    "TrdNm": "NIC Industries",
+    "Addr1": "5th block, kuvempu layout",
+    "Addr2": "kuvempu layout",
+    "Loc": "GANDHINAGAR",
+    "Pin": 560001,
+    "Stcd": "29",
+    "Ph": "9000000000",
+    "Em": "abc@gmail.com"
+  },
+  "BuyerDtls": {
+    "Gstin": "29AWGPV7107B1Z1",
+    "LglNm": "XYZ company pvt ltd",
+    "TrdNm": "XYZ Industries",
+    "Pos": "37",
+    "Addr1": "7th block, kuvempu layout",
+    "Addr2": "kuvempu layout",
+    "Loc": "GANDHINAGAR",
+    "Pin": 560004,
+    "Stcd": "29",
+    "Ph": "9000000000",
+    "Em": "abc@gmail.com"
+  },
+  "DispDtls": {
+    "Nm": "ABC company pvt ltd",
+    "Addr1": "7th block, kuvempu layout",
+    "Addr2": "kuvempu layout",
+    "Loc": "Banagalore",
+    "Pin": 518360,
+    "Stcd": "37"
+  },
+  "ShipDtls": {
+    "Gstin": "29AWGPV7107B1Z1",
+    "LglNm": "CBE company pvt ltd",
+    "TrdNm": "kuvempu layout",
+    "Addr1": "7th block, kuvempu layout",
+    "Addr2": "kuvempu layout",
+    "Loc": "Banagalore",
+    "Pin": 518360,
+    "Stcd": "37"
+  },
+  "ItemList": [
+    {
+      "SlNo": "1",
+      "IsServc": "N",
+      "PrdDesc": "Rice",
+      "HsnCd": "1001",
+      "Barcde": "123456",
+      "BchDtls": {
+        "Nm": "123456",
+        "Expdt": "21/01/2026",
+        "wrDt": "21/01/2026"
+      },
+      "Qty": 100.345,
+      "FreeQty": 10,
+      "Unit": "NOS",
+      "UnitPrice": 99.545,
+      "TotAmt": 9988.84,
+      "Discount": 10,
+      "PreTaxVal": 1,
+      "AssAmt": 9978.84,
+      "GstRt": 12,
+      "SgstAmt": 0,
+      "IgstAmt": 1197.46,
+      "CgstAmt": 0,
+      "CesRt": 5,
+      "CesAmt": 498.94,
+      "CesNonAdvlAmt": 10,
+      "StateCesRt": 12,
+      "StateCesAmt": 1197.46,
+      "StateCesNonAdvlAmt": 5,
+      "OthChrg": 10,
+      "TotItemVal": 12897.7,
+      "OrdLineRef": "3256",
+      "OrgCntry": "AG",
+      "PrdSlNo": "12345",
+      "AttribDtls": [
+        { "Nm": "Rice", "Val": "10000" }
+      ]
+    }
+  ],
+  "ValDtls": {
+    "AssVal": 9978.84,
+    "CgstVal": 0,
+    "SgstVal": 0,
+    "IgstVal": 1197.46,
+    "CesVal": 508.94,
+    "StCesVal": 1202.46,
+    "Discount": 10,
+    "OthChrg": 20,
+    "RndOffAmt": 0.3,
+    "TotInvVal": 12908,
+    "TotInvValFc": 12897.7
+  },
+  "PayDtls": {
+    "Nm": "ABCDE",
+    "Accdet": "5697389713210",
+    "Mode": "Cash",
+    "Fininsbr": "SBIN11000",
+    "Payterm": "100",
+    "Payinstr": "Gift",
+    "Crtrn": "test",
+    "Dirdr": "test",
+    "Crday": 100,
+    "Paidamt": 10000,
+    "Paymtdue": 5000
+  },
+  "RefDtls": {
+    "InvRm": "TEST",
+    "DocPerdDtls": {
+      "InvStDt": "21/01/2026",
+      "InvEndDt": "21/01/2026"
+    },
+    "PrecDocDtls": [
+      { "InvNo": "DOC/002", "InvDt": "21/01/2026", "OthRefNo": "123456" }
+    ],
+    "ContrDtls": [
+      {
+        "RecAdvRefr": "DOC/002",
+        "RecAdvDt": "21/01/2026",
+        "Tendrefr": "Abc001",
+        "Contrrefr": "Co123",
+        "Extrefr": "Yo456",
+        "Projrefr": "Doc-456",
+        "Porefr": "Doc-789",
+        "PoRefDt": "21/01/2026"
+      }
+    ]
+  },
+  "AddlDocDtls": [
+    {
+      "Url": "https://einv-apisandbox.nic.in",
+      "Docs": "Test Doc",
+      "Info": "Document Test"
+    }
+  ],
+  "ExpDtls": {
+    "ShipBNo": "A-248",
+    "ShipBDt": "21/01/2026",
+    "Port": "INABG1",
+    "RefClm": "N",
+    "ForCur": "AED",
+    "CntCode": "AE"
+  },
+  "EwbDtls": {
+    "Transid": "12AWGPV7107B1Z1",
+    "Transname": "XYZ EXPORTS",
+    "Distance": 100,
+    "Transdocno": "DOC01",
+    "TransdocDt": "21/01/2026",
+    "Vehno": "ka123456",
+    "Vehtype": "R",
+    "TransMode": "1"
+  }
+}</textarea>
+                    <button type="submit">Generate</button>
+                </form>
+                <pre class="response" id="einvoice-generate-response"></pre>
+            </section>
+
+            <!-- Cancel eInvoice -->
+            <section class="api-section">
+                <h3>Cancel eInvoice</h3>
+                <form id="einvoice-cancel">
+                    <label>IRN:</label>
+                    <input type="text" name="irn" placeholder="IRN number" required>
+                    <label>Cancel Reason:</label>
+                    <select name="cancelReason" required>
+                        <option value="">Select reason...</option>
+                        <option value="1">Duplicate</option>
+                        <option value="2">Data Entry Mistake</option>
+                        <option value="3">Order Cancelled</option>
+                        <option value="4">Others</option>
+                    </select>
+                    <label>Cancel Remarks:</label>
+                    <input type="text" name="cancelRemarks" placeholder="Cancellation remarks" required>
+                    <button type="submit">Cancel</button>
+                </form>
+                <pre class="response" id="einvoice-cancel-response"></pre>
+            </section>
+
+            <!-- Get eInvoice by IRN -->
+            <section class="api-section">
+                <h3>Get eInvoice by IRN</h3>
+                <form id="einvoice-get-irn">
+                    <label>IRN:</label>
+                    <input type="text" name="irn" placeholder="IRN number" required>
+                    <button type="submit">Get</button>
+                </form>
+                <pre class="response" id="einvoice-get-irn-response"></pre>
+            </section>
+
+            <!-- Get eInvoice by Document Details -->
+            <section class="api-section">
+                <h3>Get eInvoice by Document Details</h3>
+                <form id="einvoice-get-details">
+                    <label>Document Type:</label>
+                    <input type="text" name="docType" placeholder="INV" required>
+                    <label>Document Number:</label>
+                    <input type="text" name="docNo" placeholder="DOC001" required>
+                    <label>Document Date (DD/MM/YYYY):</label>
+                    <input type="text" name="docDate" placeholder="01/01/2024" required>
+                    <button type="submit">Get</button>
+                </form>
+                <pre class="response" id="einvoice-get-details-response"></pre>
+            </section>
+        </div>
+    </div>
+
+    <script src="js/api-test.js"></script>
+</body>
+</html>

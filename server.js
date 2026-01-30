@@ -33,6 +33,14 @@ app.use(
   })
 );
 
+// Serve static files from public directory
+app.use('/test', express.static('public'));
+
+// Test API routes (no authentication required) - only in non-production
+if (config.server.env !== 'production') {
+  app.use('/test/api', require('./routes/test.routes'));
+}
+
 // Custom response helpers
 app.response.sendResponse = function (data, message, statusCode = 200) {
   return this.status(statusCode).send({

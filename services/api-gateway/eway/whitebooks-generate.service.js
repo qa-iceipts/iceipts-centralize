@@ -269,7 +269,7 @@ class WhitebooksEwayService {
    */
   async cancelEwayBill({ ewayBillNo, cancelReason, cancelRemarks, dispatcherId, mineId }) {
     const startTime = Date.now();
-    const ewayConfig = config.externalAPIs.ewayWhitebooks;
+    const ewayConfig = config.externalAPIs.eway.whitebooks;
 
     try {
       await this.ensureAuthenticated();
@@ -288,7 +288,7 @@ class WhitebooksEwayService {
       };
 
       const response = await axios.post(
-        `${ewayConfig.baseURL}/ewayapi/canewb?email=${ewayConfig.email}`,
+        `${ewayConfig.url}/ewayapi/canewb?email=${ewayConfig.email}`,
         cancelData,
         {
           headers: {
