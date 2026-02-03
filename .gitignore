@@ -2,8 +2,7 @@ node_modules/
 .env
 *.log
 .DS_Store
-# keys/
-*.pem
+# *.pem
 coverage/
 .vscode/
 .idea/
@@ -12,7 +11,3 @@ build/
 *.swp
 *.swo
 *~
-services/vahanApis/PRODprivate.pem
-services/vahanApis/PRODpublic.pem
-services/vahanApis/UATprivate.pem
-services/vahanApis/UATpublic.pem
