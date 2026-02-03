@@ -4,6 +4,8 @@ const { PromiseHandler } = require('../middleware/error.handler');
 const { vahanRateLimiter } = require('../middleware/api-rate-limiter');
 const { authenticateDispatcher } = require('../middleware/dispatcher.auth');
 const vahanController = require('../controllers/vahan.controller');
+const sendRes = require('../services/vahanApis/rcEnc');
+const sendResRc = require('../services/vahanApis/rcEnc');
 
 // Apply VAHAN rate limiter to all routes
 router.use(vahanRateLimiter);
@@ -16,8 +18,8 @@ router.get('/vehicle/:vehicleNumber', PromiseHandler(vahanController.getVehicleF
 router.get('/driver/:dlNumber', PromiseHandler(vahanController.getDriverFromDB));
 
 // VAHAN API validation routes
-router.post('/validate-vehicle', PromiseHandler(vahanController.validateVehicleRC));
-router.post('/validate-dl', PromiseHandler(vahanController.validateDL));
+router.post('/validate-vehicle', sendRes);
+router.post('/validate-dl', sendResRc);
 
 // Save data to local database
 router.post('/save-vehicle', PromiseHandler(vahanController.saveVehicleData));
