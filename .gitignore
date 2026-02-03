@@ -12,3 +12,7 @@ build/
 *.swp
 *.swo
 *~
+services/vahanApis/PRODprivate.pem
+services/vahanApis/PRODpublic.pem
+services/vahanApis/UATprivate.pem
+services/vahanApis/UATpublic.pem
