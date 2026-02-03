@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=production
+    volumes:
+      # Mount keys directories (keys must exist on host)
+      - ./keys:/app/keys:ro
+      # Mount VAHAN API keys (for backward compatibility)
+      - ./services/vahanApis/UATprivate.pem:/app/services/vahanApis/UATprivate.pem:ro
+      - ./services/vahanApis/UATpublic.pem:/app/services/vahanApis/UATpublic.pem:ro
+      - ./services/vahanApis/PRODprivate.pem:/app/services/vahanApis/PRODprivate.pem:ro
+      - ./services/vahanApis/PRODpublic.pem:/app/services/vahanApis/PRODpublic.pem:ro
+    env_file:
+      - .env
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s

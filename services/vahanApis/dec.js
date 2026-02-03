@@ -9,6 +9,14 @@ if (process.env.VAHANENV == "PROD") {
   privateKeyPath = path.resolve(__dirname, "PRODprivate.pem");
 }
 
+// Check if key file exists before reading
+if (!fs.existsSync(privateKeyPath)) {
+  console.error(`[VAHAN API] CRITICAL: Private key file not found at: ${privateKeyPath}`);
+  console.error(`[VAHAN API] Environment: ${process.env.VAHANENV || 'UAT'}`);
+  console.error(`[VAHAN API] Please ensure keys are properly deployed. See DEPLOYMENT.md for details.`);
+  throw new Error(`VAHAN private key file not found: ${privateKeyPath}`);
+}
+
 const privateKeyPem = fs.readFileSync(privateKeyPath, "utf8");
 
 

@@ -2,7 +2,8 @@ node_modules/
 .env
 *.log
 .DS_Store
-# *.pem
+*.pem
+keys/
 coverage/
 .vscode/
 .idea/

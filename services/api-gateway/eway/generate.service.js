@@ -16,13 +16,23 @@ let privateKey, publicKey;
 try {
   const privateKeyPath = config.externalAPIs.eway.nic.privateKeyPath;
   const publicKeyPath = config.externalAPIs.eway.nic.publicKeyPath;
-  
+
+  // Check if key files exist
+  if (!fs.existsSync(privateKeyPath)) {
+    throw new Error(`Private key file not found: ${privateKeyPath}. See DEPLOYMENT.md for key setup instructions.`);
+  }
+  if (!fs.existsSync(publicKeyPath)) {
+    throw new Error(`Public key file not found: ${publicKeyPath}. See DEPLOYMENT.md for key setup instructions.`);
+  }
+
   privateKey = fs.readFileSync(privateKeyPath, 'utf8');
   publicKey = fs.readFileSync(publicKeyPath, 'utf8');
-  
+
   logger.info('NIC eWay Bill keys loaded successfully');
 } catch (error) {
   logger.error('Failed to load NIC eWay Bill keys', { error: error.message });
+  logger.error('eWay Bill functionality will not work until keys are properly deployed');
+  // Don't throw - allow app to start but eWay operations will fail gracefully
 }
 
 /**
@@ -37,6 +47,9 @@ function generateSEK() {
  */
 function encryptSEK(sek) {
   try {
+    if (!publicKey) {
+      throw new Error('eWay Bill public key not loaded. Check server logs for key loading errors.');
+    }
     const publicKeyObj = forge.pki.publicKeyFromPem(publicKey);
     const encrypted = publicKeyObj.encrypt(sek.toString('hex'), 'RSA-OAEP', {
       md: forge.md.sha256.create(),

@@ -12,6 +12,9 @@ package-lock.json.lock
 .env
 .env.*
 config/local.js
+# Keys should be mounted at runtime, not baked into image
+keys/
+*.pem
 
 # Logs
 logs
