@@ -1,7 +1,6 @@
 const axios = require('axios');
 const crypto = require('crypto');
 const forge = require('node-forge');
-const fs = require('fs');
 const config = require('../../../config/gateway.config');
 const logger = require('../../../helpers/logger');
 const createHttpError = require('http-errors');
@@ -11,27 +10,28 @@ const moment = require('moment-timezone');
  * NIC eWay Bill Generation Service
  */
 
-// Load keys
+// Load keys from environment variables via config
 let privateKey, publicKey;
 try {
-  const privateKeyPath = config.externalAPIs.eway.nic.privateKeyPath;
-  const publicKeyPath = config.externalAPIs.eway.nic.publicKeyPath;
+  privateKey = config.externalAPIs.eway.nic.privateKey;
+  publicKey = config.externalAPIs.eway.nic.publicKey;
 
-  // Check if key files exist
-  if (!fs.existsSync(privateKeyPath)) {
-    throw new Error(`Private key file not found: ${privateKeyPath}. See DEPLOYMENT.md for key setup instructions.`);
+  // Check if keys are available
+  if (!privateKey) {
+    throw new Error('EWAY_PRIVATE_KEY environment variable not set. See DEPLOYMENT.md for key setup instructions.');
   }
-  if (!fs.existsSync(publicKeyPath)) {
-    throw new Error(`Public key file not found: ${publicKeyPath}. See DEPLOYMENT.md for key setup instructions.`);
+  if (!publicKey) {
+    throw new Error('EWAY_PUBLIC_KEY environment variable not set. See DEPLOYMENT.md for key setup instructions.');
   }
 
-  privateKey = fs.readFileSync(privateKeyPath, 'utf8');
-  publicKey = fs.readFileSync(publicKeyPath, 'utf8');
+  // Replace escaped newlines with actual newlines
+  privateKey = privateKey.replace(/\\n/g, '\n');
+  publicKey = publicKey.replace(/\\n/g, '\n');
 
-  logger.info('NIC eWay Bill keys loaded successfully');
+  logger.info('NIC eWay Bill keys loaded successfully from environment variables');
 } catch (error) {
   logger.error('Failed to load NIC eWay Bill keys', { error: error.message });
-  logger.error('eWay Bill functionality will not work until keys are properly deployed');
+  logger.error('eWay Bill functionality will not work until keys are properly set in environment variables');
   // Don't throw - allow app to start but eWay operations will fail gracefully
 }
 

@@ -1,24 +1,24 @@
 const crypto = require("crypto");
 const forge = require("node-forge"); // Import the Forge library
-const path = require("path");
-const fs = require("fs");
 
-
-var privateKeyPath = path.join(__dirname, "UATprivate.pem");
+// Get private key from environment variable based on environment
+let privateKeyPem;
 if (process.env.VAHANENV == "PROD") {
-  privateKeyPath = path.resolve(__dirname, "PRODprivate.pem");
+  privateKeyPem = process.env.VAHAN_PROD_PRIVATE_KEY;
+} else {
+  privateKeyPem = process.env.VAHAN_UAT_PRIVATE_KEY;
 }
 
-// Check if key file exists before reading
-if (!fs.existsSync(privateKeyPath)) {
-  console.error(`[VAHAN API] CRITICAL: Private key file not found at: ${privateKeyPath}`);
+// Check if key is available
+if (!privateKeyPem) {
+  console.error(`[VAHAN API] CRITICAL: Private key not found in environment variables`);
   console.error(`[VAHAN API] Environment: ${process.env.VAHANENV || 'UAT'}`);
-  console.error(`[VAHAN API] Please ensure keys are properly deployed. See DEPLOYMENT.md for details.`);
-  throw new Error(`VAHAN private key file not found: ${privateKeyPath}`);
+  console.error(`[VAHAN API] Please ensure VAHAN_UAT_PRIVATE_KEY or VAHAN_PROD_PRIVATE_KEY is set in .env`);
+  throw new Error(`VAHAN private key environment variable not set`);
 }
 
-const privateKeyPem = fs.readFileSync(privateKeyPath, "utf8");
-
+// Replace escaped newlines with actual newlines
+privateKeyPem = privateKeyPem.replace(/\\n/g, '\n');
 
 const privateKey = forge.pki.privateKeyFromPem(privateKeyPem);
 

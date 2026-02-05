@@ -5,28 +5,25 @@ const { getAuthToken } = require("./auth.js");
 const { encDataFuciton } = require("./dec.js");
 const axios = require("axios");
 const moment = require("moment-timezone");
-const path = require("path");
-const fs = require("fs");
 
-
-var publicKeyPath = path.join(__dirname, "UATpublic.pem");
+// Get public key from environment variable based on environment
+let publicKeyString;
 if (process.env.VAHANENV == "PROD") {
-  publicKeyPath = path.resolve(__dirname, "PRODpublic.pem");
+  publicKeyString = process.env.VAHAN_PROD_PUBLIC_KEY;
+} else {
+  publicKeyString = process.env.VAHAN_UAT_PUBLIC_KEY;
 }
 
-const publicKeyString = fs.readFileSync(publicKeyPath, "utf8");
+// Check if key is available
+if (!publicKeyString) {
+  console.error(`[VAHAN API] CRITICAL: Public key not found in environment variables`);
+  console.error(`[VAHAN API] Environment: ${process.env.VAHANENV || 'UAT'}`);
+  console.error(`[VAHAN API] Please ensure VAHAN_UAT_PUBLIC_KEY or VAHAN_PROD_PUBLIC_KEY is set in .env`);
+  throw new Error(`VAHAN public key environment variable not set`);
+}
 
-
-// // Protean public key
-// const publicKeyString = `-----BEGIN PUBLIC KEY-----
-// MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA2qRdDtt6qc4UMI+5V0y0
-// ZkWuusnPO/OC92nNjBVQB0Lcv8NrzHZEEh3yfKybz9BJCExciSzUNfEJkC6fy3Zr
-// waJfvpZ2PsKU87vUyZjzyw1ZYWLHKf+7azLEFtByxTYfbm4gxA8VAj9uEcyNKqPZ
-// 6r5JK92K6ig3RRsGL0i+Htowj0T0YBVOz83JpsfG6SUZYe6VP6X9FppgbhpxDG3o
-// C4veHcad6N+FmTo8y1MPtgb5ZfuNgr8z/Nmg/mDH9Lq/NQ5V8empx/uWPwVvr+zU
-// 2qk8N9fs/A/XbQM2GzD5HiDyIZl7C1wPsCp/+9gZEJeql8fORGxfmKuhCzt4UEx9
-// LwIDAQAB
-// -----END PUBLIC KEY-----`;
+// Replace escaped newlines with actual newlines
+publicKeyString = publicKeyString.replace(/\\n/g, '\n');
 
 const publicKey = forge.pki.publicKeyFromPem(publicKeyString);
 function getRandomBytes(length) {

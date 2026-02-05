@@ -15,8 +15,9 @@ module.exports = {
       ssKey: process.env.VAHAN_SSKEY,
       env: process.env.VAHANENV || 'UAT',
       timeout: 30000,
-      publicKeyPath: './keys/vahan/public.pem',
-      privateKeyPath: './keys/vahan/private.pem'
+      // Keys are now loaded from environment variables
+      publicKey: process.env.VAHANENV === 'PROD' ? process.env.VAHAN_PROD_PUBLIC_KEY : process.env.VAHAN_UAT_PUBLIC_KEY,
+      privateKey: process.env.VAHANENV === 'PROD' ? process.env.VAHAN_PROD_PRIVATE_KEY : process.env.VAHAN_UAT_PRIVATE_KEY
     },
 
     eway: {
@@ -29,8 +30,9 @@ module.exports = {
         txnId: process.env.EWAY_TXN_ID,
         passphrase: process.env.EWAY_PASSPHRASE,
         env: process.env.EWAYENV || 'UAT',
-        privateKeyPath: './keys/eway/private.pem',
-        publicKeyPath: './keys/eway/public.pem',
+        // Keys are now loaded from environment variables
+        privateKey: process.env.EWAY_PRIVATE_KEY,
+        publicKey: process.env.EWAY_PUBLIC_KEY,
         timeout: 30000
       },
       
