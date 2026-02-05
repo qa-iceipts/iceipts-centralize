@@ -60,7 +60,86 @@ module.exports = (sequelize, DataTypes) => {
       fullDataJson: {
         type: DataTypes.JSON,
         defaultValue: {},
-      }
+      },
+      regDate: {
+        type: DataTypes.STRING,
+      },
+      permitValidUpto: {
+        type: DataTypes.STRING,
+      },
+      vehicleTaxUpto: {
+        type: DataTypes.STRING,
+      },
+      fitnessValidUpto: {
+        type: DataTypes.STRING,
+      },
+      // Vehicle identification
+      chassis: {
+        type: DataTypes.STRING,
+      },
+      engine: {
+        type: DataTypes.STRING,
+      },
+      // Vehicle details
+      vehicleManufacturerName: {
+        type: DataTypes.STRING,
+      },
+      model: {
+        type: DataTypes.STRING,
+      },
+      vehicleColour: {
+        type: DataTypes.STRING,
+      },
+      normsType: {
+        type: DataTypes.STRING,
+      },
+      bodyType: {
+        type: DataTypes.STRING,
+      },
+      vehicleClass: {
+        type: DataTypes.STRING,
+      },
+      vehicleCategory: {
+        type: DataTypes.STRING,
+      },
+      // Weight and capacity
+      grossVehicleWeight: {
+        type: DataTypes.STRING,
+      },
+      unladenWeight: {
+        type: DataTypes.STRING,
+      },
+      vehicleSeatCapacity: {
+        type: DataTypes.STRING,
+      },
+      // Owner details
+      ownerCount: {
+        type: DataTypes.STRING,
+      },
+      // Status info
+      status: {
+        type: DataTypes.STRING,
+      },
+      blacklistStatus: {
+        type: DataTypes.STRING,
+      },
+      // Insurance details
+      vehicleInsuranceCompanyName: {
+        type: DataTypes.STRING,
+      },
+      vehicleInsurancePolicyNumber: {
+        type: DataTypes.STRING,
+      },
+      // Registration info
+      rtoCode: {
+        type: DataTypes.STRING,
+      },
+      regAuthority: {
+        type: DataTypes.STRING,
+      },
+      isCommercial: {
+        type: DataTypes.BOOLEAN,
+      },
     },
     {
       sequelize,

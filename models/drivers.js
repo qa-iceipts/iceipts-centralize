@@ -75,6 +75,51 @@ module.exports = (sequelize, DataTypes) => {
       dlValidUpto: {
         type: DataTypes.DATE,
       },
+      // Additional fields from VAHAN DL API
+      fatherOrHusband: {
+        type: DataTypes.STRING,
+      },
+      bloodGroup: {
+        type: DataTypes.STRING,
+      },
+      dlIssueDate: {
+        type: DataTypes.STRING,
+      },
+      dlValidityNonTransport: {
+        type: DataTypes.STRING,
+      },
+      dlValidityTransport: {
+        type: DataTypes.STRING,
+      },
+      covDetails: {
+        type: DataTypes.JSON,
+        defaultValue: [],
+      },
+      state: {
+        type: DataTypes.STRING,
+      },
+      district: {
+        type: DataTypes.STRING,
+      },
+      pincode: {
+        type: DataTypes.STRING,
+      },
+      completeAddress: {
+        type: DataTypes.TEXT,
+      },
+      dlStatus: {
+        type: DataTypes.STRING,
+      },
+      statusDetails: {
+        type: DataTypes.TEXT,
+      },
+      endorsementAndHazardousDetails: {
+        type: DataTypes.TEXT,
+      },
+      fullDataJson: {
+        type: DataTypes.JSON,
+        defaultValue: {},
+      },
     },
     {
       sequelize,

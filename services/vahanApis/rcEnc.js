@@ -5,6 +5,7 @@ const { getAuthToken } = require("./auth.js");
 const { encDataFuciton } = require("./dec.js");
 const axios = require("axios");
 const moment = require("moment-timezone");
+const db = require("../../models");
 
 // Get public key from environment variable based on environment
 let publicKeyString;
@@ -60,6 +61,162 @@ function calculateHmacSHA256(plainSymmetricKeyReceived, encryptedData) {
   );
   const hash = hasher.update(encryptedData).digest("base64");
   return hash;
+}
+
+/**
+ * Safely get nested property from object
+ * @param {Object} obj - The object to get property from
+ * @param {string} path - Dot-separated path to property
+ * @param {*} defaultValue - Default value if property doesn't exist
+ */
+function safeGet(obj, path, defaultValue = null) {
+  try {
+    const keys = path.split('.');
+    let result = obj;
+    for (const key of keys) {
+      if (result === null || result === undefined) {
+        return defaultValue;
+      }
+      result = result[key];
+    }
+    return result !== undefined && result !== null && result !== '' ? result : defaultValue;
+  } catch (error) {
+    return defaultValue;
+  }
+}
+
+/**
+ * Save vehicle data to staticVehicleData table
+ * Handles missing fields and response structure changes gracefully
+ */
+async function saveVehicleData(decryptedResponse) {
+  try {
+    // Parse response if it's a string
+    let parsedData;
+    if (typeof decryptedResponse === 'string') {
+      try {
+        parsedData = JSON.parse(decryptedResponse);
+      } catch (parseError) {
+        console.log('[VAHAN] Failed to parse response as JSON, skipping save');
+        return null;
+      }
+    } else {
+      parsedData = decryptedResponse;
+    }
+
+    // Check if result exists
+    const result = safeGet(parsedData, 'result');
+    if (!result) {
+      console.log('[VAHAN] No result object in response, skipping save');
+      return null;
+    }
+
+    // Get vehicle number - required field
+    const vehicleNo = safeGet(result, 'regNo') || safeGet(result, 'vehicleNumber');
+    if (!vehicleNo) {
+      console.log('[VAHAN] No vehicle number in response, skipping save');
+      return null;
+    }
+
+    // Extract address info safely
+    const splitAddress = safeGet(result, 'splitPresentAddress') || safeGet(result, 'splitPermanentAddress') || {};
+
+    // Get state - handle array format [[\"MAHARASHTRA\",\"MH\"]]
+    let state = null;
+    const stateData = safeGet(splitAddress, 'state');
+    if (Array.isArray(stateData) && stateData.length > 0) {
+      state = Array.isArray(stateData[0]) ? stateData[0][0] : stateData[0];
+    }
+
+    // Get city - handle array format
+    let city = null;
+    const cityData = safeGet(splitAddress, 'city');
+    if (Array.isArray(cityData) && cityData.length > 0) {
+      city = cityData[0];
+    }
+
+    // Prepare data for saving
+    const vehicleData = {
+      // Basic info
+      truckNo: vehicleNo,
+      truckOwner: safeGet(result, 'owner'),
+      address: safeGet(result, 'presentAddress') || safeGet(result, 'permanentAddress'),
+      pincode: safeGet(splitAddress, 'pincode'),
+      state: state,
+      city: city,
+      type: safeGet(result, 'type'),
+      phoneNumber: safeGet(result, 'mobileNumber'),
+
+      // Vehicle identification
+      chassis: safeGet(result, 'chassis'),
+      engine: safeGet(result, 'engine'),
+
+      // Vehicle details
+      vehicleManufacturerName: safeGet(result, 'vehicleManufacturerName'),
+      model: safeGet(result, 'model'),
+      vehicleColour: safeGet(result, 'vehicleColour'),
+      normsType: safeGet(result, 'normsType'),
+      bodyType: safeGet(result, 'bodyType'),
+      vehicleClass: safeGet(result, 'class'),
+      vehicleCategory: safeGet(result, 'vehicleCategory'),
+
+      // Weight and capacity
+      grossVehicleWeight: safeGet(result, 'grossVehicleWeight'),
+      unladenWeight: safeGet(result, 'unladenWeight'),
+      vehicleSeatCapacity: safeGet(result, 'vehicleSeatCapacity'),
+
+      // Owner details
+      ownerCount: safeGet(result, 'ownerCount'),
+
+      // Status info
+      status: safeGet(result, 'status'),
+      blacklistStatus: safeGet(result, 'blacklistStatus'),
+
+      // Insurance details
+      vehicleInsuranceCompanyName: safeGet(result, 'vehicleInsuranceCompanyName'),
+      vehicleInsurancePolicyNumber: safeGet(result, 'vehicleInsurancePolicyNumber'),
+      vehicleInsuranceUpto: safeGet(result, 'vehicleInsuranceUpto'),
+
+      // Registration info
+      rtoCode: safeGet(result, 'rtoCode'),
+      regAuthority: safeGet(result, 'regAuthority'),
+      regDate: safeGet(result, 'regDate'),
+      isCommercial: safeGet(result, 'isCommercial'),
+
+      // Validity dates
+      rcBook: !!safeGet(result, 'rcExpiryDate'),
+      fitnessCertificate: !!safeGet(result, 'fitnessValidUpto'),
+      puccValidUpto: safeGet(result, 'puccUpto'),
+      rcExpiryDate: safeGet(result, 'rcExpiryDate'),
+      permitValidUpto: safeGet(result, 'permitValidUpto'),
+      vehicleTaxUpto: safeGet(result, 'vehicleTaxUpto'),
+      fitnessValidUpto: safeGet(result, 'fitnessValidUpto'),
+
+      // Full JSON data
+      fullDataJson: result,
+    };
+
+    // Check if vehicle already exists
+    const existingVehicle = await db.staticVehicleData.findOne({
+      where: { truckNo: vehicleNo }
+    });
+
+    if (existingVehicle) {
+      // Update existing record
+      await existingVehicle.update(vehicleData);
+      console.log(`[VAHAN] Updated vehicle data for: ${vehicleNo}`);
+      return existingVehicle;
+    } else {
+      // Create new record
+      const newVehicle = await db.staticVehicleData.create(vehicleData);
+      console.log(`[VAHAN] Saved new vehicle data for: ${vehicleNo}`);
+      return newVehicle;
+    }
+  } catch (error) {
+    // Log error but don't throw - we don't want to break the API response
+    console.error('[VAHAN] Error saving vehicle data:', error.message);
+    return null;
+  }
 }
 
 async function sendReq(encryptedData, result, keyENC1) {
@@ -161,6 +318,11 @@ async function sendRes(req, res, next) {
 
     const response = await sendReq(encryptedData, result, keyENC1); // Get the actual response from sendReq
     console.log("Response:", response); // Log the response for debugging
+
+    // Save vehicle data to database if response is successful
+    if (response) {
+      await saveVehicleData(response);
+    }
 
     res.sendResponse({ decryptedData: response }); // Send decrypted data to Postman
   } catch (error) {
