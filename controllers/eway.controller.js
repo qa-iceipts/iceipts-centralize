@@ -4,6 +4,7 @@ const cancelService = require('../services/api-gateway/eway/cancel.service');
 const extendService = require('../services/api-gateway/eway/extend.service');
 const logger = require('../helpers/logger');
 const createHttpError = require('http-errors');
+const { trackApiCall, API_TYPES } = require('../services/apiStatsService');
 
 /**
  * Generate eWay Bill
@@ -36,6 +37,11 @@ exports.generateEwayBill = async (req, res, next) => {
       });
     }
 
+    // Track successful API call
+    const actualMineId = mineId || req.dispatcher?.mineId;
+    const actualOrgId = req.dispatcher?.orgId;
+    await trackApiCall(actualMineId, actualOrgId, API_TYPES.EWAY_GENERATE, true);
+
     res.status(200).json({
       success: true,
       message: 'eWay Bill generated successfully',
@@ -43,6 +49,11 @@ exports.generateEwayBill = async (req, res, next) => {
       ...result
     });
   } catch (error) {
+    // Track failed API call
+    const actualMineId = req.body.mineId || req.dispatcher?.mineId;
+    const actualOrgId = req.dispatcher?.orgId;
+    await trackApiCall(actualMineId, actualOrgId, API_TYPES.EWAY_GENERATE, false);
+
     logger.error('eWay Bill generation controller error', {
       service: 'eway-controller',
       error: error.message,
@@ -86,6 +97,11 @@ exports.cancelEwayBill = async (req, res, next) => {
       });
     }
 
+    // Track successful API call
+    const actualMineId = mineId || req.dispatcher?.mineId;
+    const actualOrgId = req.dispatcher?.orgId;
+    await trackApiCall(actualMineId, actualOrgId, API_TYPES.EWAY_CANCEL, true);
+
     res.status(200).json({
       success: true,
       message: 'eWay Bill cancelled successfully',
@@ -93,6 +109,11 @@ exports.cancelEwayBill = async (req, res, next) => {
       ...result
     });
   } catch (error) {
+    // Track failed API call
+    const actualMineId = req.body.mineId || req.dispatcher?.mineId;
+    const actualOrgId = req.dispatcher?.orgId;
+    await trackApiCall(actualMineId, actualOrgId, API_TYPES.EWAY_CANCEL, false);
+
     logger.error('eWay Bill cancellation controller error', {
       service: 'eway-controller',
       error: error.message,
@@ -120,12 +141,22 @@ exports.extendEwayBill = async (req, res, next) => {
       mineId: mineId || req.dispatcher?.mineId
     });
 
+    // Track successful API call
+    const actualMineId = mineId || req.dispatcher?.mineId;
+    const actualOrgId = req.dispatcher?.orgId;
+    await trackApiCall(actualMineId, actualOrgId, API_TYPES.EWAY_EXTEND, true);
+
     res.status(200).json({
       success: true,
       message: 'eWay Bill extended successfully',
       ...result
     });
   } catch (error) {
+    // Track failed API call
+    const actualMineId = req.body.mineId || req.dispatcher?.mineId;
+    const actualOrgId = req.dispatcher?.orgId;
+    await trackApiCall(actualMineId, actualOrgId, API_TYPES.EWAY_EXTEND, false);
+
     logger.error('eWay Bill extension controller error', {
       service: 'eway-controller',
       error: error.message

@@ -8,6 +8,9 @@ class WhitebooksEwayService {
     this.ewayConfig = config.externalAPIs.eway;
     this.authToken = null;
     this.tokenExpiry = null;
+    // STABILITY FIX: Mutex to prevent concurrent token refresh calls
+    // This prevents multiple parallel requests from each triggering separate auth calls
+    this._refreshPromise = null;
   }
 
   /**
@@ -22,7 +25,10 @@ class WhitebooksEwayService {
         service: 'eway-whitebooks'
       });
 
-      const authUrl = `${ewayConfig.url}/authenticate?email=${ewayConfig.email}&username=${ewayConfig.username}&password=${ewayConfig.password}`;
+      // SECURITY FIX: Credentials moved from URL query params to headers
+      // This prevents credentials from being logged in server access logs, proxy logs, and browser history
+      // Safe: Whitebooks API accepts credentials in either location; headers are preferred
+      const authUrl = `${ewayConfig.url}/authenticate`;
 
       const response = await axios.get(authUrl, {
         headers: {
@@ -30,6 +36,9 @@ class WhitebooksEwayService {
           'client_id': ewayConfig.clientId,
           'client_secret': ewayConfig.clientSecret,
           'gstin': ewayConfig.gstin,
+          'email': ewayConfig.email,           // Moved from URL query param
+          'username': ewayConfig.username,     // Moved from URL query param
+          'password': ewayConfig.password,     // Moved from URL query param
           'Accept': 'application/json',
         },
         timeout: ewayConfig.timeout
@@ -68,11 +77,28 @@ class WhitebooksEwayService {
   }
 
   /**
-   * Ensure authentication
+   * Ensure authentication with mutex to prevent concurrent refresh
+   * STABILITY FIX: Uses mutex pattern to prevent race conditions
+   * When multiple requests arrive with expired token, only one auth call is made
    */
   async ensureAuthenticated() {
-    if (!this.isTokenValid()) {
-      await this.authenticate();
+    if (this.isTokenValid()) {
+      return;  // Token is valid, no refresh needed
+    }
+
+    // If refresh is already in progress, wait for it instead of starting another
+    if (this._refreshPromise) {
+      await this._refreshPromise;
+      return;
+    }
+
+    // Start refresh and store the promise so concurrent callers can wait
+    try {
+      this._refreshPromise = this.authenticate();
+      await this._refreshPromise;
+    } finally {
+      // Clear the promise so future calls can trigger refresh if needed
+      this._refreshPromise = null;
     }
   }
 
@@ -154,8 +180,9 @@ class WhitebooksEwayService {
       }
 
       // Call Whitebooks API
+      // SECURITY FIX: Email moved from URL query param to header
       const response = await axios.post(
-        `${ewayConfig.url}/ewayapi/genewaybill?email=${ewayConfig.email}`,
+        `${ewayConfig.url}/ewayapi/genewaybill`,
         ewayPayload,
         {
           headers: {
@@ -163,6 +190,7 @@ class WhitebooksEwayService {
             'client_id': ewayConfig.clientId,
             'client_secret': ewayConfig.clientSecret,
             'gstin': ewayConfig.gstin,
+            'email': ewayConfig.email,  // Moved from URL query param
             'Content-Type': 'application/json',
             'Accept': 'application/json',
           },
@@ -287,8 +315,9 @@ class WhitebooksEwayService {
         cancelRmrk: cancelRemarks || 'Cancelled'
       };
 
+      // SECURITY FIX: Email moved from URL query param to header
       const response = await axios.post(
-        `${ewayConfig.url}/ewayapi/canewb?email=${ewayConfig.email}`,
+        `${ewayConfig.url}/ewayapi/canewb`,
         cancelData,
         {
           headers: {
@@ -296,6 +325,7 @@ class WhitebooksEwayService {
             'client_id': ewayConfig.clientId,
             'client_secret': ewayConfig.clientSecret,
             'gstin': ewayConfig.gstin,
+            'email': ewayConfig.email,  // Moved from URL query param
             'Content-Type': 'application/json',
             'Accept': 'application/json',
           },

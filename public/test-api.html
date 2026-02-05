@@ -17,6 +17,26 @@
             <p class="warning">⚠️ Development Environment Only</p>
         </header>
 
+        <!-- Dispatcher Headers Section -->
+        <section class="api-section" style="margin-bottom: 20px; background: #1e293b;">
+            <h3 style="color: #f1f5f9;">🔐 Authentication Headers</h3>
+            <p style="color: #94a3b8; font-size: 0.9em; margin-bottom: 15px;">Configure dispatcher identity headers required for API calls</p>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+                <div>
+                    <label style="color: #cbd5e1;">Dispatcher ID:</label>
+                    <input type="text" id="dispatcher-id" value="test-dispatcher" placeholder="Dispatcher ID">
+                </div>
+                <div>
+                    <label style="color: #cbd5e1;">Mine ID:</label>
+                    <input type="text" id="mine-id" value="test-mine" placeholder="Mine ID">
+                </div>
+                <div>
+                    <label style="color: #cbd5e1;">Org ID:</label>
+                    <input type="text" id="org-id" value="test-org" placeholder="Organization ID">
+                </div>
+            </div>
+        </section>
+
         <!-- Tab Navigation -->
         <div class="tabs">
             <button class="tab-btn active" data-tab="vahan">🚗 VAHAN APIs</button>
@@ -45,7 +65,9 @@
                 <h3>Validate Driving License</h3>
                 <form id="vahan-validate-dl">
                     <label>DL Number:</label>
-                    <input type="text" name="dlNumber" placeholder="MH1234567890123" required>
+                    <input type="text" name="dlNumber" placeholder="GJ0620220008466" required>
+                    <label>Date of Birth (DD-MM-YYYY):</label>
+                    <input type="text" name="dob" placeholder="21-04-2002" required>
                     <button type="submit">Validate</button>
                 </form>
                 <pre class="response" id="vahan-validate-dl-response"></pre>

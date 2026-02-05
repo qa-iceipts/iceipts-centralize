@@ -11,7 +11,9 @@ class EInvoiceService {
     this.credentials = config.externalAPIs.einvoice.whitebooks;
     this.authToken = null;
     this.tokenExpiry = null;
-    
+    // STABILITY FIX: Mutex to prevent concurrent token refresh calls
+    this._refreshPromise = null;
+
     logger.info('eInvoice service initialized', {
       url: this.credentials.url,
       gstin: this.credentials.gstin
@@ -40,17 +42,15 @@ class EInvoiceService {
   }
 
   /**
-   * Build query parameters for API requests (matching transport server pattern)
+   * Build query parameters for API requests
+   * SECURITY FIX: Credentials removed from query params - now only in headers
+   * This prevents credentials from being logged in server access logs and proxy logs
+   * Safe: Whitebooks API accepts credentials in headers; we keep only email for routing
    */
   _buildQueryParams(includeAuthToken = false) {
+    // Only non-sensitive identifiers go in query params
     const params = {
-      email: this.credentials.email,
-      username: this.credentials.username,
-      password: this.credentials.password,
-      ip_address: this.credentials.ipAddress,
-      client_id: this.credentials.clientId,
-      client_secret: this.credentials.clientSecret,
-      gstin: this.credentials.gstin
+      email: this.credentials.email  // Email kept for API routing (not a secret)
     };
 
     if (includeAuthToken && this.authToken) {
@@ -116,10 +116,27 @@ class EInvoiceService {
 
   /**
    * Ensure service is authenticated before making API calls
+   * STABILITY FIX: Uses mutex pattern to prevent concurrent refresh
+   * When multiple requests arrive with expired token, only one auth call is made
    */
   async ensureAuthenticated() {
-    if (!this.isTokenValid()) {
-      await this.authenticate();
+    if (this.isTokenValid()) {
+      return;  // Token is valid, no refresh needed
+    }
+
+    // If refresh is already in progress, wait for it instead of starting another
+    if (this._refreshPromise) {
+      await this._refreshPromise;
+      return;
+    }
+
+    // Start refresh and store the promise so concurrent callers can wait
+    try {
+      this._refreshPromise = this.authenticate();
+      await this._refreshPromise;
+    } finally {
+      // Clear the promise so future calls can trigger refresh if needed
+      this._refreshPromise = null;
     }
   }
 }

@@ -23,15 +23,39 @@ document.addEventListener('DOMContentLoaded', function() {
     initEinvoiceForms();
 });
 
-// API base URL - change this if using Live Server
-const API_BASE = window.location.port === '5500' ? 'http://localhost:5000' : '';
+// API base URL - adjust based on environment
+const API_BASE = window.location.hostname === 'localhost'
+    ? 'http://localhost:5000/api'
+    : '/api/centralize/api';
+
+// Default dispatcher headers for authentication (update these as needed)
+let dispatcherHeaders = {
+    'X-Dispatcher-ID': 'test-dispatcher',
+    'X-Mine-ID': 'test-mine',
+    'X-Org-ID': 'test-org'
+};
+
+// Function to update dispatcher headers from UI
+function updateDispatcherHeaders() {
+    const dispatcherId = document.getElementById('dispatcher-id')?.value;
+    const mineId = document.getElementById('mine-id')?.value;
+    const orgId = document.getElementById('org-id')?.value;
+
+    if (dispatcherId) dispatcherHeaders['X-Dispatcher-ID'] = dispatcherId;
+    if (mineId) dispatcherHeaders['X-Mine-ID'] = mineId;
+    if (orgId) dispatcherHeaders['X-Org-ID'] = orgId;
+}
 
 // Helper function to make API calls
 async function makeApiCall(url, method, data = null) {
+    // Update headers from UI before each call
+    updateDispatcherHeaders();
+
     const options = {
         method: method,
         headers: {
             'Content-Type': 'application/json',
+            ...dispatcherHeaders
         }
     };
 
@@ -82,7 +106,7 @@ function initVahanForms() {
 
         const vehicleNumber = this.vehicleNumber.value;
         const response = await makeApiCall(
-            '/test/api/vahan/validate-vehicle',
+            '/gateway/vahan/validate-vehicle',
             'POST',
             { vehicleNumber }
         );
@@ -99,10 +123,11 @@ function initVahanForms() {
         section.classList.add('loading');
 
         const dlNumber = this.dlNumber.value;
+        const dob = this.dob?.value || '';
         const response = await makeApiCall(
-            '/test/api/vahan/validate-dl',
+            '/gateway/vahan/validate-dl',
             'POST',
-            { dlNumber }
+            { dlNumber, dob }
         );
 
         section.classList.remove('loading');
@@ -119,7 +144,7 @@ function initVahanForms() {
         try {
             const vehicleData = JSON.parse(this.vehicleData.value);
             const response = await makeApiCall(
-                '/test/api/vahan/save-vehicle',
+                '/gateway/vahan/save-vehicle',
                 'POST',
                 vehicleData
             );
@@ -144,7 +169,7 @@ function initVahanForms() {
 
         const vehicleNumber = this.vehicleNumber.value;
         const response = await makeApiCall(
-            `/test/api/vahan/vehicle/${vehicleNumber}`,
+            `/gateway/vahan/vehicle/${vehicleNumber}`,
             'GET'
         );
 
@@ -162,7 +187,7 @@ function initVahanForms() {
         try {
             const driverData = JSON.parse(this.driverData.value);
             const response = await makeApiCall(
-                '/test/api/vahan/save-driver',
+                '/gateway/vahan/save-driver',
                 'POST',
                 driverData
             );
@@ -187,7 +212,7 @@ function initVahanForms() {
 
         const dlNumber = this.dlNumber.value;
         const response = await makeApiCall(
-            `/test/api/vahan/driver/${dlNumber}`,
+            `/gateway/vahan/driver/${dlNumber}`,
             'GET'
         );
 
@@ -210,7 +235,7 @@ function initEwayForms() {
             const isMasterEway = this.isMasterEway.checked;
 
             const response = await makeApiCall(
-                '/test/api/eway/generate',
+                '/gateway/eway/generate',
                 'POST',
                 { ewayData, isMasterEway }
             );
@@ -241,7 +266,7 @@ function initEwayForms() {
         };
 
         const response = await makeApiCall(
-            '/test/api/eway/cancel',
+            '/gateway/eway/cancel',
             'POST',
             data
         );
@@ -261,7 +286,7 @@ function initEwayForms() {
             const extensionData = JSON.parse(this.extensionData.value);
 
             const response = await makeApiCall(
-                '/test/api/eway/extend',
+                '/gateway/eway/extend',
                 'POST',
                 { ewayBillNo: this.ewayBillNo.value, extensionData }
             );
@@ -290,7 +315,7 @@ function initEinvoiceForms() {
         try {
             const invoiceData = JSON.parse(this.invoiceData.value);
             const response = await makeApiCall(
-                '/test/api/einvoice/generate',
+                '/gateway/einvoice/generate',
                 'POST',
                 { invoiceData }
             );
@@ -320,7 +345,7 @@ function initEinvoiceForms() {
         };
 
         const response = await makeApiCall(
-            '/test/api/einvoice/cancel',
+            '/gateway/einvoice/cancel',
             'POST',
             data
         );
@@ -338,7 +363,7 @@ function initEinvoiceForms() {
 
         const irn = this.irn.value;
         const response = await makeApiCall(
-            `/test/api/einvoice/irn/${irn}`,
+            `/gateway/einvoice/irn/${irn}`,
             'GET'
         );
 
@@ -358,7 +383,7 @@ function initEinvoiceForms() {
         const docDate = this.docDate.value;
 
         const response = await makeApiCall(
-            `/test/api/einvoice/details?docType=${docType}&docNo=${docNo}&docDate=${docDate}`,
+            `/gateway/einvoice/details?docType=${docType}&docNo=${docNo}&docDate=${docDate}`,
             'GET'
         );
 

@@ -89,5 +89,52 @@ module.exports = {
     timeout: 30000,
     errorThresholdPercentage: 50,
     resetTimeout: 30000
+  },
+
+  /**
+   * FEATURE FLAGS
+   * All flags default to OFF for safe gradual rollout
+   * Enable via environment variables:
+   *   USE_CENTRAL_GATEWAY=true
+   *   ENABLE_RETRY=true
+   *   etc.
+   *
+   * SAFETY: All new features are opt-in; existing behavior unchanged when flags are off
+   */
+  features: {
+    // Central Gateway Configuration
+    // When enabled, dispatcher can route requests through central API client
+    useCentralGateway: process.env.USE_CENTRAL_GATEWAY === 'true',  // Default: OFF
+    centralGatewayUrl: process.env.CENTRAL_GATEWAY_URL || 'http://localhost:5000',
+    centralGatewayTimeout: parseInt(process.env.CENTRAL_GATEWAY_TIMEOUT) || 45000,
+
+    // Fallback Configuration
+    // When enabled, falls back to direct API calls if central gateway fails
+    fallbackOnCentralFailure: process.env.FALLBACK_ON_CENTRAL_FAILURE !== 'false',  // Default: ON (safe)
+
+    // Retry Configuration
+    // When enabled, retries failed API calls with exponential backoff
+    retryEnabled: process.env.ENABLE_RETRY === 'true',  // Default: OFF
+    retryMaxAttempts: parseInt(process.env.RETRY_MAX_ATTEMPTS) || 3,
+    retryBaseDelayMs: parseInt(process.env.RETRY_BASE_DELAY_MS) || 1000,
+
+    // Circuit Breaker Configuration
+    // When enabled, uses circuit breaker pattern for external API calls
+    circuitBreakerEnabled: process.env.ENABLE_CIRCUIT_BREAKER === 'true',  // Default: OFF
+    circuitBreakerFailureThreshold: parseInt(process.env.CB_FAILURE_THRESHOLD) || 5,
+    circuitBreakerResetTimeout: parseInt(process.env.CB_RESET_TIMEOUT) || 30000,
+
+    // Idempotency Configuration
+    // When enabled, uses idempotency middleware for POST requests
+    idempotencyEnabled: process.env.ENABLE_IDEMPOTENCY === 'true',  // Default: OFF
+    idempotencyAutoGenerate: process.env.IDEMPOTENCY_AUTO_GENERATE === 'true',  // Default: OFF
+
+    // PII Redaction
+    // This is always ON for security - cannot be disabled via env var
+    piiRedactionEnabled: true,  // ALWAYS ON
+
+    // Token Refresh Mutex
+    // This is always ON for stability - cannot be disabled via env var
+    tokenMutexEnabled: true,  // ALWAYS ON
   }
 };

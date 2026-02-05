@@ -284,7 +284,26 @@ async function sendRes(req, res, next) {
 
     // Save vehicle data to database if response is successful
     if (response) {
-      await saveVehicleData(response);
+      const savedVehicle = await saveVehicleData(response);
+      console.log('[VAHAN RC] Save result:', savedVehicle ? 'Success' : 'Failed');
+      if (savedVehicle) {
+        let vehicleEntryCount = await db.vahanApiStats.findOne({
+          where: {
+            month: moment().month() + 1,
+            year: moment().year(),
+          },
+        });
+        if (vehicleEntryCount) {
+          await vehicleEntryCount.increment("vehicleEntryCount");
+        } else {
+          await db.vahanApiStats.create({
+            month: moment().month() + 1,
+            year: moment().year(),
+            vehicleEntryCount: 1,
+            dlNumberCount: 0,
+          });
+        }
+      }
     }
 
     res.sendResponse({ decryptedData: response }); // Send decrypted data to Postman
