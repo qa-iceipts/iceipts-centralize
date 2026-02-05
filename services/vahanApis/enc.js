@@ -134,6 +134,18 @@ async function saveDriverData(decryptedResponse) {
     // Get validity info
     const validity = safeGet(result, 'validity') || {};
 
+    // Get statusDetails and endorsementAndHazardousDetails - stringify if objects
+    const statusDetailsRaw = safeGet(result, 'statusDetails');
+    const endorsementRaw = safeGet(result, 'endorsementAndHazardousDetails');
+    const statusDetailsStr = statusDetailsRaw && typeof statusDetailsRaw === 'object'
+      ? JSON.stringify(statusDetailsRaw) : statusDetailsRaw;
+    const endorsementStr = endorsementRaw && typeof endorsementRaw === 'object'
+      ? JSON.stringify(endorsementRaw) : endorsementRaw;
+
+    // Convert pincode to string if it's a number
+    const pincodeVal = safeGet(firstAddress, 'pin');
+    const pincodeStr = pincodeVal ? String(pincodeVal) : null;
+
     const driverData = {
       dlNumber: dlNumber,
       fullName: safeGet(result, 'name'),
@@ -148,14 +160,16 @@ async function saveDriverData(decryptedResponse) {
       covDetails: safeGet(result, 'covDetails'),
       state: safeGet(firstAddress, 'state'),
       district: safeGet(firstAddress, 'district'),
-      pincode: safeGet(firstAddress, 'pin'),
+      pincode: pincodeStr,
       completeAddress: safeGet(firstAddress, 'completeAddress'),
       address: safeGet(firstAddress, 'completeAddress'),
       dlStatus: safeGet(result, 'status'),
-      statusDetails: safeGet(result, 'statusDetails'),
-      endorsementAndHazardousDetails: safeGet(result, 'endorsementAndHazardousDetails'),
+      statusDetails: statusDetailsStr,
+      endorsementAndHazardousDetails: endorsementStr,
       fullDataJson: result,
     };
+
+    console.log('[VAHAN DL] Attempting to save driver data for:', dlNumber);
 
     const existingDriver = await db.drivers.findOne({
       where: { dlNumber: dlNumber }
@@ -266,10 +280,13 @@ async function sendRes(req, res, next) {
     // const hash = calculateHmacSHA256(plainSymmetricKey, encryptedData);
 
     const response = await sendReq(encryptedData, result,keyENC1); // Get the actual response from sendReq
+    console.log('[VAHAN DL] Response received:', response ? 'Yes' : 'No');
 
     // Save driver data to database if response is successful
     if (response) {
+      console.log('[VAHAN DL] Calling saveDriverData...');
       const savedDriver = await saveDriverData(response);
+      console.log('[VAHAN DL] Save result:', savedDriver ? 'Success' : 'Failed');
 
       // Update API stats counter if driver data was saved/updated
       if (savedDriver) {
