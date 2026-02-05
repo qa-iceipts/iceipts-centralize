@@ -9,7 +9,7 @@ const db = require("../../models");
 
 // Get public key from environment variable based on environment
 let publicKeyString;
-if (process.env.VAHANENV == "PROD") {
+if (process.env.VAHANENV === "PROD") {
   publicKeyString = process.env.VAHAN_PROD_PUBLIC_KEY;
 } else {
   publicKeyString = process.env.VAHAN_UAT_PUBLIC_KEY;
@@ -17,14 +17,14 @@ if (process.env.VAHANENV == "PROD") {
 
 // Check if key is available
 if (!publicKeyString) {
-  console.error(`[VAHAN API] CRITICAL: Public key not found in environment variables`);
-  console.error(`[VAHAN API] Environment: ${process.env.VAHANENV || 'UAT'}`);
-  console.error(`[VAHAN API] Please ensure VAHAN_UAT_PUBLIC_KEY or VAHAN_PROD_PUBLIC_KEY is set in .env`);
-  throw new Error(`VAHAN public key environment variable not set`);
+  console.error(`[VAHAN] Public key not found. Environment: ${process.env.VAHANENV || 'UAT'}`);
+  throw new Error(`VAHAN public key not set in environment variables`);
 }
 
 // Replace escaped newlines with actual newlines
 publicKeyString = publicKeyString.replace(/\\n/g, '\n');
+
+
 
 const publicKey = forge.pki.publicKeyFromPem(publicKeyString);
 function getRandomBytes(length) {
@@ -63,145 +63,10 @@ function calculateHmacSHA256(plainSymmetricKeyReceived, encryptedData) {
   return hash;
 }
 
-/**
- * Safely get nested property from object
- * @param {Object} obj - The object to get property from
- * @param {string} path - Dot-separated path to property
- * @param {*} defaultValue - Default value if property doesn't exist
- */
-function safeGet(obj, path, defaultValue = null) {
-  try {
-    const keys = path.split('.');
-    let result = obj;
-    for (const key of keys) {
-      if (result === null || result === undefined) {
-        return defaultValue;
-      }
-      result = result[key];
-    }
-    return result !== undefined && result !== null && result !== '' ? result : defaultValue;
-  } catch (error) {
-    return defaultValue;
-  }
-}
-
-/**
- * Save driver data to drivers table
- * Handles missing fields and response structure changes gracefully
- */
-async function saveDriverData(decryptedResponse) {
-  try {
-    // Parse response if it's a string
-    let parsedData;
-    if (typeof decryptedResponse === 'string') {
-      try {
-        parsedData = JSON.parse(decryptedResponse);
-      } catch (parseError) {
-        console.log('[VAHAN DL] Failed to parse response as JSON, skipping save');
-        return null;
-      }
-    } else {
-      parsedData = decryptedResponse;
-    }
-
-    // Check if result exists
-    const result = safeGet(parsedData, 'result');
-    if (!result) {
-      console.log('[VAHAN DL] No result object in response, skipping save');
-      return null;
-    }
-
-    // Get DL number - required field
-    const dlNumber = safeGet(result, 'dlNumber');
-    if (!dlNumber) {
-      console.log('[VAHAN DL] No DL number in response, skipping save');
-      return null;
-    }
-
-    // Extract address info safely - address is an array
-    const addressArray = safeGet(result, 'address') || [];
-    const firstAddress = Array.isArray(addressArray) && addressArray.length > 0 ? addressArray[0] : {};
-
-    // Format DOB if present
-    let dobFormatted = null;
-    const dob = safeGet(result, 'dob');
-    if (dob) {
-      try {
-        dobFormatted = moment(dob, 'DD-MM-YYYY').format('YYYY-MM-DD');
-      } catch (e) {
-        dobFormatted = dob;
-      }
-    }
-
-    // Get image with data URI prefix
-    const img = safeGet(result, 'img');
-    const driverImage = img ? "data:image/jpeg;base64," + img : null;
-
-    // Get validity info
-    const validity = safeGet(result, 'validity') || {};
-
-    // Prepare data for saving
-    const driverData = {
-      // Basic info
-      dlNumber: dlNumber,
-      fullName: safeGet(result, 'name'),
-      fatherOrHusband: safeGet(result, 'father/husband') || safeGet(result, 'fatherOrHusband'),
-      dob: dobFormatted,
-      bloodGroup: safeGet(result, 'bloodGroup'),
-      driverImage: driverImage,
-
-      // License details
-      dlIssueDate: safeGet(result, 'issueDate'),
-      dlValidityNonTransport: safeGet(validity, 'nonTransport'),
-      dlValidityTransport: safeGet(validity, 'transport'),
-      dlValidUpto: safeGet(validity, 'nonTransport') || safeGet(validity, 'transport'),
-      covDetails: safeGet(result, 'covDetails'),
-
-      // Address info
-      state: safeGet(firstAddress, 'state'),
-      district: safeGet(firstAddress, 'district'),
-      pincode: safeGet(firstAddress, 'pin'),
-      completeAddress: safeGet(firstAddress, 'completeAddress'),
-      address: safeGet(firstAddress, 'completeAddress'),
-
-      // Status info
-      dlStatus: safeGet(result, 'status'),
-      statusDetails: safeGet(result, 'statusDetails'),
-      endorsementAndHazardousDetails: safeGet(result, 'endorsementAndHazardousDetails'),
-
-      // Full JSON data
-      fullDataJson: result,
-    };
-
-    // Check if driver already exists by DL number
-    const existingDriver = await db.drivers.findOne({
-      where: { dlNumber: dlNumber }
-    });
-
-    if (existingDriver) {
-      // Update existing record
-      await existingDriver.update(driverData);
-      console.log(`[VAHAN DL] Updated driver data for: ${dlNumber}`);
-      return existingDriver;
-    } else {
-      // Create new record
-      const newDriver = await db.drivers.create(driverData);
-      console.log(`[VAHAN DL] Saved new driver data for: ${dlNumber}`);
-      return newDriver;
-    }
-  } catch (error) {
-    // Log error but don't throw - we don't want to break the API response
-    console.error('[VAHAN DL] Error saving driver data:', error.message);
-    return null;
-  }
-}
-
 async function sendReq(encryptedData, result,keyENC1) {
   const timestamp = getTimestamp();
-  console.log("This is TimeStamped: ", timestamp);
   const requestId = crypto.randomUUID();
   let token = await getAuthToken();
-  console.log("KEYENC1: ", keyENC1);
   let bodyDATA = {
     data: encryptedData,
     version: "1.0.0",
@@ -210,7 +75,6 @@ async function sendReq(encryptedData, result,keyENC1) {
     timestamp,
     requestId,
   };
-  console.log("bodyDATAbodyDATA",bodyDATA)
   function getTimestamp() {
     const istTime = moment.tz("Asia/Kolkata");
 
@@ -231,19 +95,12 @@ async function sendReq(encryptedData, result,keyENC1) {
 
   try {
     const response = await axios.request(config);
-    console.log("Response:", response.data);
     let responseData = await encDataFuciton(
       response.data.symmetricKey,
       response.data.data,
       response.data.hash
     );
 
-    // let responseData = await encDataFuciton(
-    //   bodyDATA.symmetricKey,
-    //   bodyDATA.data,
-    //   bodyDATA.hash
-    // );
-    console.log("encDataFuciton response:", responseData);
     return responseData;
   } catch (error) {
     console.error("Error:", error);
@@ -263,7 +120,6 @@ async function sendRes(req, res, next) {
   // return async (req, res, next) => {
   try {
     const plainText = req.body; // Adjust as needed to match your request format
-    console.log("This is Plain text: ", plainText);
 
     var sskey = process.env.VAHANSSKEY;
     var sskeyBytes = Buffer.from(sskey, "utf8");
@@ -278,55 +134,56 @@ async function sendRes(req, res, next) {
     });
     const encryptedHex = forge.util.bytesToHex(encData);
 
-    console.log(
-      "encryptedKey : ",
-      Buffer.from(encryptedHex, "hex").toString("base64")
-    );
-
     let keyENC1 = Buffer.from(encryptedHex, "hex").toString("base64");
     const plainSymmetricKey = sskey;
     const encryptedData = encrypt(plainText, plainSymmetricKey);
-    console.log("encryptedData : " + encryptedData);
 
     const plainSymmetricKeyReceived = sskey;
     const result = calculateHmacSHA256(
       plainSymmetricKeyReceived,
       JSON.stringify(plainText)
     );
-    console.log("hash : " + result);
 
     // const plainSymmetricKey = "1234567890123456"; // Adjust key as needed
     // const encryptedData = encrypt(plainText, plainSymmetricKey);
     // const hash = calculateHmacSHA256(plainSymmetricKey, encryptedData);
 
     const response = await sendReq(encryptedData, result,keyENC1); // Get the actual response from sendReq
-    console.log("Response:", response); // Log the response for debugging
-
-    // Save driver data to database if response is successful
-    if (response) {
-      const savedDriver = await saveDriverData(response);
-
-      // Update API stats counter if driver data was saved/updated
-      if (savedDriver) {
-        let dlNumberCount = await db.vahanApiStats.findOne({
-          where: {
-            month: moment().month() + 1,
-            year: moment().year(),
-          },
+    let dlData = JSON.parse(response);
+    if (dlData.result && dlData.result.img) {
+      let dobFormatted = moment(dlData.result.dob, 'DD-MM-YYYY').format('YYYY-MM-DD');
+      let img = dlData.result.img;
+      let driverDataAdd = await db.drivers.findOne({
+        where: {
+          dlNumber: dlData.result.dlNumber,
+        },
+      });
+      if (!driverDataAdd) {
+        await db.drivers.create({
+          dlNumber: dlData.result.dlNumber,
+          dob: dobFormatted,
+          fullName: dlData.result.name,
+          driverImage: "data:image/jpeg;base64,"+ img,
         });
-        if (dlNumberCount) {
-          await dlNumberCount.increment("dlNumberCount");
-        } else {
-          await db.vahanApiStats.create({
-            month: moment().month() + 1,
-            year: moment().year(),
-            dlNumberCount: 1,
-            vehicleEntryCount: 0,
-          });
-        }
+      }
+      // Increase counter for dl number
+      let dlNumberCount = await db.vahanApiStats.findOne({
+        where: {
+          month: moment().month() + 1,
+          year: moment().year(),
+        },
+      });
+      if (dlNumberCount) {
+        await dlNumberCount.increment("dlNumberCount");
+      } else {
+        await db.vahanApiStats.create({
+          month: moment().month() + 1,
+          year: moment().year(),
+          dlNumberCount: 1,
+          vehicleEntryCount: 0,
+        });
       }
     }
-
     res.sendResponse({ decryptedData: response }); // Send decrypted data to Postman
   } catch (error) {
     next(error);

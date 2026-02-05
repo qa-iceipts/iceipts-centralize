@@ -15,22 +15,6 @@ const payload = qs.stringify({
   grant_type: 'client_credentials',
 });
 
-// Make the POST request
-// (async () => {
-//   try {
-//     const response = await axios.post(endpoint, payload, {
-//       headers: {
-//         Authorization: `Basic ${authHeader}`,
-//         'Content-Type': 'application/x-www-form-urlencoded',
-//       },
-//     });
-
-//     console.log('Token Response:', response.data);
-//   } catch (error) {
-//     console.error('Error:', error.response ? error.response.data : error.message);
-//   }
-// })();
-
 async function getAuthToken(){
   try {
     const response = await axios.post(endpoint, payload, {
