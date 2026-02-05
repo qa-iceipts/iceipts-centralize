@@ -5,6 +5,7 @@ const { getAuthToken } = require("./auth.js");
 const { encDataFuciton } = require("./dec.js");
 const axios = require("axios");
 const moment = require("moment-timezone");
+const db = require("../../models");
 
 // Get public key from environment variable based on environment
 let publicKeyString;
@@ -57,6 +58,125 @@ function calculateHmacSHA256(plainSymmetricKeyReceived, encryptedData) {
   );
   const hash = hasher.update(encryptedData).digest("base64");
   return hash;
+}
+
+/**
+ * Safely get nested property from object
+ */
+function safeGet(obj, path, defaultValue = null) {
+  try {
+    const keys = path.split('.');
+    let result = obj;
+    for (const key of keys) {
+      if (result === null || result === undefined) {
+        return defaultValue;
+      }
+      result = result[key];
+    }
+    return result !== undefined && result !== null && result !== '' ? result : defaultValue;
+  } catch (error) {
+    return defaultValue;
+  }
+}
+
+/**
+ * Save vehicle data to staticVehicleData table
+ * Handles missing fields and response structure changes gracefully
+ */
+async function saveVehicleData(decryptedResponse) {
+  try {
+    let parsedData;
+    if (typeof decryptedResponse === 'string') {
+      try {
+        parsedData = JSON.parse(decryptedResponse);
+      } catch (parseError) {
+        console.log('[VAHAN RC] Failed to parse response as JSON, skipping save');
+        return null;
+      }
+    } else {
+      parsedData = decryptedResponse;
+    }
+
+    const result = safeGet(parsedData, 'result');
+    if (!result) {
+      console.log('[VAHAN RC] No result object in response, skipping save');
+      return null;
+    }
+
+    const vehicleNo = safeGet(result, 'vehicleNo');
+    if (!vehicleNo) {
+      console.log('[VAHAN RC] No vehicle number in response, skipping save');
+      return null;
+    }
+
+    // Handle nested array format like state: [["MAHARASHTRA","MH"]]
+    const getNestedArrayValue = (arr, index = 0) => {
+      if (Array.isArray(arr) && arr.length > 0 && Array.isArray(arr[0])) {
+        return arr[0][index] || null;
+      }
+      return arr || null;
+    };
+
+    const vehicleData = {
+      truckNo: vehicleNo,
+      rcOwnerName: safeGet(result, 'ownerName'),
+      rcFatherName: safeGet(result, 'fatherName'),
+      presentAddress: safeGet(result, 'presentAddress'),
+      permanentAddress: safeGet(result, 'permanentAddress'),
+      vehicleCategory: safeGet(result, 'vehicleCategory'),
+      vehicleChassisNumber: safeGet(result, 'chassis'),
+      vehicleEngineNumber: safeGet(result, 'engine'),
+      makerDescription: safeGet(result, 'vehicleManufacturerName'),
+      makerModel: safeGet(result, 'model'),
+      vehicleColor: safeGet(result, 'vehicleColour'),
+      fuelType: safeGet(result, 'fuelType'),
+      normsType: safeGet(result, 'normsType'),
+      bodyType: safeGet(result, 'bodyType'),
+      vehicleClass: safeGet(result, 'vehicleClass'),
+      grossVehicleWeight: safeGet(result, 'grossVehicleWeight'),
+      unladenWeight: safeGet(result, 'unladenWeight'),
+      vehicleSeatCapacity: safeGet(result, 'vehicleSeatCapacity'),
+      ownerCount: safeGet(result, 'ownerCount'),
+      rcFinancer: safeGet(result, 'financer'),
+      rcInsuranceCompany: safeGet(result, 'vehicleInsuranceCompanyName'),
+      rcInsurancePolicyNumber: safeGet(result, 'vehicleInsurancePolicyNumber'),
+      rcInsuranceUpto: safeGet(result, 'insuranceValidity'),
+      rcRegistrationDate: safeGet(result, 'registrationDate'),
+      rcFitnessUpto: safeGet(result, 'fitnessValidity'),
+      rcTaxUpto: safeGet(result, 'taxValidity'),
+      rcPucUpto: safeGet(result, 'puccValidity'),
+      rcPermitNo: safeGet(result, 'permitNumber'),
+      rcPermitType: safeGet(result, 'permitType'),
+      rcPermitIssueDate: safeGet(result, 'permitIssueDate'),
+      rcPermitValidFrom: safeGet(result, 'permitValidFrom'),
+      rcPermitValidUpto: safeGet(result, 'permitValidUpto'),
+      rcStatus: safeGet(result, 'status'),
+      rcBlacklistStatus: safeGet(result, 'blacklistStatus'),
+      rtoCode: safeGet(result, 'rtoCode'),
+      rcRegAuthority: safeGet(result, 'regAuthority'),
+      rcIsCommercial: safeGet(result, 'isCommercial'),
+      rcNocDetails: safeGet(result, 'nocDetails'),
+      stateName: getNestedArrayValue(safeGet(result, 'state'), 0),
+      fullDataJson: result,
+    };
+
+    const existingVehicle = await db.staticVehicleData.findOne({
+      where: { truckNo: vehicleNo }
+    });
+
+    if (existingVehicle) {
+      await existingVehicle.update(vehicleData);
+      console.log(`[VAHAN RC] Updated vehicle data for: ${vehicleNo}`);
+      return existingVehicle;
+    } else {
+      const newVehicle = await db.staticVehicleData.create(vehicleData);
+      console.log(`[VAHAN RC] Saved new vehicle data for: ${vehicleNo}`);
+      return newVehicle;
+    }
+  } catch (error) {
+    console.error('[VAHAN RC] Error saving vehicle data:', error.message);
+    return null;
+  }
 }
 
 async function sendReq(encryptedData, result, keyENC1) {
@@ -137,6 +257,11 @@ async function sendRes(req, res, next) {
       JSON.stringify(plainText)
     );
     const response = await sendReq(encryptedData, result, keyENC1); // Get the actual response from sendReq
+
+    // Save vehicle data to database if response is successful
+    if (response) {
+      await saveVehicleData(response);
+    }
 
     res.sendResponse({ decryptedData: response }); // Send decrypted data to Postman
   } catch (error) {
