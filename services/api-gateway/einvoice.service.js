@@ -42,15 +42,25 @@ class EInvoiceService {
   }
 
   /**
-   * Build query parameters for API requests
-   * SECURITY FIX: Credentials removed from query params - now only in headers
-   * This prevents credentials from being logged in server access logs and proxy logs
-   * Safe: Whitebooks API accepts credentials in headers; we keep only email for routing
+   * Build query parameters for authentication requests
+   * NOTE: Whitebooks /authenticate endpoint REQUIRES credentials in query params
+   * This is an API limitation that cannot be changed
+   */
+  _buildAuthQueryParams() {
+    return {
+      email: this.credentials.email,
+      username: this.credentials.username,
+      password: this.credentials.password
+    };
+  }
+
+  /**
+   * Build query parameters for regular API requests (non-auth)
+   * Only includes email and auth-token (credentials not needed after auth)
    */
   _buildQueryParams(includeAuthToken = false) {
-    // Only non-sensitive identifiers go in query params
     const params = {
-      email: this.credentials.email  // Email kept for API routing (not a secret)
+      email: this.credentials.email
     };
 
     if (includeAuthToken && this.authToken) {
@@ -77,11 +87,12 @@ class EInvoiceService {
     try {
       logger.info('Authenticating with Whitebooks eInvoice API');
 
+      // NOTE: Whitebooks /authenticate endpoint REQUIRES credentials in query params
       const response = await axios({
         method: 'GET',
         url: `${this.credentials.url}/einvoice/authenticate`,
         headers: this._buildHeaders(false),
-        params: this._buildQueryParams(false),
+        params: this._buildAuthQueryParams(),  // Auth endpoint needs full credentials
         timeout: this.credentials.timeout
       });
 

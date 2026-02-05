@@ -6,10 +6,9 @@ const logger = require('../../../helpers/logger');
 class WhitebooksEwayService {
   constructor() {
     this.ewayConfig = config.externalAPIs.eway;
-    this.authToken = null;
-    this.tokenExpiry = null;
-    // STABILITY FIX: Mutex to prevent concurrent token refresh calls
-    // This prevents multiple parallel requests from each triggering separate auth calls
+    this.isAuthenticated = false;
+    this.authExpiry = null;
+    // STABILITY FIX: Mutex to prevent concurrent auth calls
     this._refreshPromise = null;
   }
 
@@ -20,37 +19,44 @@ class WhitebooksEwayService {
   async authenticate() {
     try {
       const ewayConfig = config.externalAPIs.eway.whitebooks;
-      
+
       logger.info('Authenticating with Whitebooks eWay API', {
         service: 'eway-whitebooks'
       });
 
-      // SECURITY FIX: Credentials moved from URL query params to headers
-      // This prevents credentials from being logged in server access logs, proxy logs, and browser history
-      // Safe: Whitebooks API accepts credentials in either location; headers are preferred
-      const authUrl = `${ewayConfig.url}/authenticate`;
+      // NOTE: Whitebooks /authenticate endpoint REQUIRES credentials in query params
+      // Build URL with query string directly (matching working pattern)
+      const authUrl = `${ewayConfig.url}/authenticate?email=${encodeURIComponent(ewayConfig.email)}&username=${encodeURIComponent(ewayConfig.username)}&password=${encodeURIComponent(ewayConfig.password)}`;
 
-      const response = await axios.get(authUrl, {
+      const requestConfig = {
+        method: 'get',
+        maxBodyLength: Infinity,
+        url: authUrl,
         headers: {
-          'ip_address': ewayConfig.ipAddress,
-          'client_id': ewayConfig.clientId,
-          'client_secret': ewayConfig.clientSecret,
-          'gstin': ewayConfig.gstin,
-          'email': ewayConfig.email,           // Moved from URL query param
-          'username': ewayConfig.username,     // Moved from URL query param
-          'password': ewayConfig.password,     // Moved from URL query param
-          'Accept': 'application/json',
+          ip_address: ewayConfig.ipAddress,
+          client_id: ewayConfig.clientId,
+          client_secret: ewayConfig.clientSecret,
+          gstin: ewayConfig.gstin,
+          Accept: 'application/json',
         },
         timeout: ewayConfig.timeout
-      });
+      };
+
+      const response = await axios.request(requestConfig);
 
       if (response.data.status_cd != 1) {
-        throw new Error('Whitebooks eWay authentication failed');
+        logger.error('Whitebooks eWay auth failed', {
+          service: 'eway-whitebooks',
+          status_cd: response.data?.status_cd,
+          status_desc: response.data?.status_desc
+        });
+        throw new Error('Whitebooks eWay authentication failed: ' + (response.data?.status_desc || 'Unknown error'));
       }
 
-      this.authToken = response.data.data?.auth_token;
-      // Set token expiry (typically 6 hours)
-      this.tokenExpiry = Date.now() + (6 * 60 * 60 * 1000);
+      // Auth succeeded - mark as authenticated
+      // Whitebooks doesn't use tokens for subsequent calls, just validates credentials
+      this.isAuthenticated = true;
+      this.authExpiry = Date.now() + (6 * 60 * 60 * 1000); // Re-validate every 6 hours
 
       logger.info('Whitebooks eWay authentication successful', {
         service: 'eway-whitebooks'
@@ -67,23 +73,22 @@ class WhitebooksEwayService {
   }
 
   /**
-   * Check if token is valid
+   * Check if authentication is still valid
    */
-  isTokenValid() {
-    if (!this.authToken || !this.tokenExpiry) {
+  isAuthValid() {
+    if (!this.isAuthenticated || !this.authExpiry) {
       return false;
     }
-    return Date.now() < this.tokenExpiry;
+    return Date.now() < this.authExpiry;
   }
 
   /**
-   * Ensure authentication with mutex to prevent concurrent refresh
+   * Ensure authentication with mutex to prevent concurrent auth calls
    * STABILITY FIX: Uses mutex pattern to prevent race conditions
-   * When multiple requests arrive with expired token, only one auth call is made
    */
   async ensureAuthenticated() {
-    if (this.isTokenValid()) {
-      return;  // Token is valid, no refresh needed
+    if (this.isAuthValid()) {
+      return;  // Auth is valid, no need to re-authenticate
     }
 
     // If refresh is already in progress, wait for it instead of starting another
@@ -122,7 +127,7 @@ class WhitebooksEwayService {
         docNo: ewayData.docNo
       });
 
-      // Ensure authenticated
+      // Ensure authenticated (validates credentials)
       await this.ensureAuthenticated();
 
       // Prepare eWay Bill data
@@ -179,20 +184,21 @@ class WhitebooksEwayService {
         ewayPayload.transporterId = ewayData.transporterId;
       }
 
-      // Call Whitebooks API
-      // SECURITY FIX: Email moved from URL query param to header
+      // email is a query param, others are headers (per API docs)
       const response = await axios.post(
         `${ewayConfig.url}/ewayapi/genewaybill`,
         ewayPayload,
         {
+          params: {
+            email: ewayConfig.email  // Query parameter
+          },
           headers: {
-            'ip_address': ewayConfig.ipAddress,
-            'client_id': ewayConfig.clientId,
-            'client_secret': ewayConfig.clientSecret,
-            'gstin': ewayConfig.gstin,
-            'email': ewayConfig.email,  // Moved from URL query param
+            ip_address: ewayConfig.ipAddress,
+            client_id: ewayConfig.clientId,
+            client_secret: ewayConfig.clientSecret,
+            gstin: ewayConfig.gstin,
             'Content-Type': 'application/json',
-            'Accept': 'application/json',
+            Accept: 'application/json',
           },
           timeout: ewayConfig.timeout
         }
@@ -201,23 +207,23 @@ class WhitebooksEwayService {
       // Check for errors in response
       if (response.data.status_cd != 1 || response.data.error || response.data.errorCodes) {
         const errorDetails = {
-          message: response.data?.error?.message || 'eWay Bill generation failed',
-          errorCodes: response.data?.errorCodes || response.data?.error?.errorCodes,
-          error: response.data?.error,
+          message: response.data?.error?.message || response.data?.message || response.data?.data?.message || 'eWay Bill generation failed',
+          errorCodes: response.data?.errorCodes || response.data?.error?.errorCodes || response.data?.data?.errorCodes,
           status_cd: response.data?.status_cd
         };
-        
+
         logger.error('Whitebooks eWay API returned error', {
           service: 'eway-whitebooks',
           docNo: ewayData.docNo,
-          errorDetails: errorDetails
+          errorCodes: errorDetails.errorCodes,
+          status_cd: errorDetails.status_cd
         });
-        
+
         // Create a detailed error message
-        const errorMessage = errorDetails.errorCodes 
+        const errorMessage = errorDetails.errorCodes
           ? `eWay Bill generation failed. Error Code: ${errorDetails.errorCodes}. ${errorDetails.message || ''}`
           : errorDetails.message;
-        
+
         const error = new createHttpError[422](errorMessage);
         error.errorCodes = errorDetails.errorCodes;
         error.errorDetails = errorDetails;
@@ -263,11 +269,11 @@ class WhitebooksEwayService {
           dispatcherId,
           mineId,
           docNo: ewayData.docNo,
-          errorDetails: errorDetails,
+          errorCodes: errorDetails.errorCodes,
           responseTime
         });
 
-        const errorMessage = errorDetails.errorCodes 
+        const errorMessage = errorDetails.errorCodes
           ? `eWay Bill generation failed. Error Code: ${errorDetails.errorCodes}. ${errorDetails.message || ''}`
           : errorDetails.message;
 
@@ -315,19 +321,21 @@ class WhitebooksEwayService {
         cancelRmrk: cancelRemarks || 'Cancelled'
       };
 
-      // SECURITY FIX: Email moved from URL query param to header
+      // email is a query param, others are headers (per API docs)
       const response = await axios.post(
         `${ewayConfig.url}/ewayapi/canewb`,
         cancelData,
         {
+          params: {
+            email: ewayConfig.email  // Query parameter
+          },
           headers: {
-            'ip_address': ewayConfig.ipAddress,
-            'client_id': ewayConfig.clientId,
-            'client_secret': ewayConfig.clientSecret,
-            'gstin': ewayConfig.gstin,
-            'email': ewayConfig.email,  // Moved from URL query param
+            ip_address: ewayConfig.ipAddress,
+            client_id: ewayConfig.clientId,
+            client_secret: ewayConfig.clientSecret,
+            gstin: ewayConfig.gstin,
             'Content-Type': 'application/json',
-            'Accept': 'application/json',
+            Accept: 'application/json',
           },
           timeout: ewayConfig.timeout
         }
