@@ -126,45 +126,57 @@ async function saveVehicleData(decryptedResponse) {
     const stateArray = safeGet(splitAddress, 'state');
 
     const vehicleData = {
+      // Basic info
       truckNo: vehicleNo,
-      rcOwnerName: safeGet(result, 'owner'),
-      rcFatherName: safeGet(result, 'ownerFatherName'),
-      presentAddress: safeGet(result, 'presentAddress'),
-      permanentAddress: safeGet(result, 'permanentAddress'),
-      vehicleCategory: safeGet(result, 'vehicleCategory'),
-      vehicleChassisNumber: safeGet(result, 'chassis'),
-      vehicleEngineNumber: safeGet(result, 'engine'),
-      makerDescription: safeGet(result, 'vehicleManufacturerName'),
-      makerModel: safeGet(result, 'model'),
-      vehicleColor: safeGet(result, 'vehicleColour'),
-      fuelType: safeGet(result, 'type'),
+      truckOwner: safeGet(result, 'owner'),
+      address: safeGet(result, 'presentAddress'),
+      state: getNestedArrayValue(stateArray, 0),
+      pincode: safeGet(splitAddress, 'pincode'),
+      city: getNestedArrayValue(safeGet(splitAddress, 'city'), 0),
+      type: safeGet(result, 'type'),
+
+      // Vehicle identification
+      chassis: safeGet(result, 'chassis'),
+      engine: safeGet(result, 'engine'),
+
+      // Vehicle details
+      vehicleManufacturerName: safeGet(result, 'vehicleManufacturerName'),
+      model: safeGet(result, 'model'),
+      vehicleColour: safeGet(result, 'vehicleColour'),
       normsType: safeGet(result, 'normsType'),
       bodyType: safeGet(result, 'bodyType'),
       vehicleClass: safeGet(result, 'class'),
+      vehicleCategory: safeGet(result, 'vehicleCategory'),
+
+      // Weight and capacity
       grossVehicleWeight: safeGet(result, 'grossVehicleWeight'),
       unladenWeight: safeGet(result, 'unladenWeight'),
       vehicleSeatCapacity: safeGet(result, 'vehicleSeatCapacity'),
       ownerCount: safeGet(result, 'ownerCount'),
-      rcFinancer: safeGet(result, 'rcFinancer'),
-      rcInsuranceCompany: safeGet(result, 'vehicleInsuranceCompanyName'),
-      rcInsurancePolicyNumber: safeGet(result, 'vehicleInsurancePolicyNumber'),
-      rcInsuranceUpto: safeGet(result, 'vehicleInsuranceUpto'),
-      rcRegistrationDate: safeGet(result, 'regDate'),
-      rcFitnessUpto: safeGet(result, 'rcExpiryDate'),
-      rcTaxUpto: safeGet(result, 'vehicleTaxUpto'),
-      rcPucUpto: safeGet(result, 'puccUpto'),
-      rcPermitNo: safeGet(result, 'permitNumber'),
-      rcPermitType: safeGet(result, 'permitType'),
-      rcPermitIssueDate: safeGet(result, 'permitIssueDate'),
-      rcPermitValidFrom: safeGet(result, 'permitValidFrom'),
-      rcPermitValidUpto: safeGet(result, 'permitValidUpto'),
-      rcStatus: safeGet(result, 'status'),
-      rcBlacklistStatus: safeGet(result, 'blacklistStatus'),
+
+      // Status info
+      status: safeGet(result, 'status'),
+      blacklistStatus: safeGet(result, 'blacklistStatus'),
+
+      // Insurance details
+      vehicleInsuranceCompanyName: safeGet(result, 'vehicleInsuranceCompanyName'),
+      vehicleInsurancePolicyNumber: safeGet(result, 'vehicleInsurancePolicyNumber'),
+      vehicleInsuranceUpto: safeGet(result, 'vehicleInsuranceUpto'),
+
+      // Registration and validity dates
+      regDate: safeGet(result, 'regDate'),
+      rcExpiryDate: safeGet(result, 'rcExpiryDate'),
+      fitnessValidUpto: safeGet(result, 'rcExpiryDate'),
+      vehicleTaxUpto: safeGet(result, 'vehicleTaxUpto'),
+      puccValidUpto: safeGet(result, 'puccUpto'),
+      permitValidUpto: safeGet(result, 'permitValidUpto'),
+
+      // Registration info
       rtoCode: safeGet(result, 'rtoCode'),
-      rcRegAuthority: safeGet(result, 'regAuthority'),
-      rcIsCommercial: safeGet(result, 'isCommercial'),
-      rcNocDetails: safeGet(result, 'nocDetails'),
-      stateName: getNestedArrayValue(stateArray, 0),
+      regAuthority: safeGet(result, 'regAuthority'),
+      isCommercial: safeGet(result, 'isCommercial'),
+
+      // Full JSON data
       fullDataJson: result,
     };
 
