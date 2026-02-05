@@ -185,16 +185,20 @@ async function saveVehicleData(decryptedResponse) {
     });
 
     if (existingVehicle) {
-      await existingVehicle.update(vehicleData);
+      // Update existing record
+      await db.staticVehicleData.update(vehicleData, {
+        where: { truckNo: vehicleNo }
+      });
       console.log(`[VAHAN RC] Updated vehicle data for: ${vehicleNo}`);
-      return existingVehicle;
+      // Fetch and return updated record
+      return await db.staticVehicleData.findOne({ where: { truckNo: vehicleNo } });
     } else {
       const newVehicle = await db.staticVehicleData.create(vehicleData);
       console.log(`[VAHAN RC] Saved new vehicle data for: ${vehicleNo}`);
       return newVehicle;
     }
   } catch (error) {
-    console.error('[VAHAN RC] Error saving vehicle data:', error.message);
+    console.error('[VAHAN RC] Error saving vehicle data:', error.message, error.stack);
     return null;
   }
 }

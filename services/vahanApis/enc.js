@@ -162,16 +162,20 @@ async function saveDriverData(decryptedResponse) {
     });
 
     if (existingDriver) {
-      await existingDriver.update(driverData);
+      // Update existing record
+      await db.drivers.update(driverData, {
+        where: { dlNumber: dlNumber }
+      });
       console.log(`[VAHAN DL] Updated driver data for: ${dlNumber}`);
-      return existingDriver;
+      // Fetch and return updated record
+      return await db.drivers.findOne({ where: { dlNumber: dlNumber } });
     } else {
       const newDriver = await db.drivers.create(driverData);
       console.log(`[VAHAN DL] Saved new driver data for: ${dlNumber}`);
       return newDriver;
     }
   } catch (error) {
-    console.error('[VAHAN DL] Error saving driver data:', error.message);
+    console.error('[VAHAN DL] Error saving driver data:', error.message, error.stack);
     return null;
   }
 }
