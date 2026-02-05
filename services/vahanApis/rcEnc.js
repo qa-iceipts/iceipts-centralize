@@ -103,7 +103,8 @@ async function saveVehicleData(decryptedResponse) {
       return null;
     }
 
-    const vehicleNo = safeGet(result, 'vehicleNo');
+    // Get vehicle number - API uses regNo or vehicleNumber
+    const vehicleNo = safeGet(result, 'regNo') || safeGet(result, 'vehicleNumber');
     if (!vehicleNo) {
       console.log('[VAHAN RC] No vehicle number in response, skipping save');
       return null;
@@ -114,13 +115,20 @@ async function saveVehicleData(decryptedResponse) {
       if (Array.isArray(arr) && arr.length > 0 && Array.isArray(arr[0])) {
         return arr[0][index] || null;
       }
+      if (Array.isArray(arr) && arr.length > 0) {
+        return arr[index] || null;
+      }
       return arr || null;
     };
 
+    // Get state from splitPresentAddress or splitPermanentAddress
+    const splitAddress = safeGet(result, 'splitPresentAddress') || safeGet(result, 'splitPermanentAddress') || {};
+    const stateArray = safeGet(splitAddress, 'state');
+
     const vehicleData = {
       truckNo: vehicleNo,
-      rcOwnerName: safeGet(result, 'ownerName'),
-      rcFatherName: safeGet(result, 'fatherName'),
+      rcOwnerName: safeGet(result, 'owner'),
+      rcFatherName: safeGet(result, 'ownerFatherName'),
       presentAddress: safeGet(result, 'presentAddress'),
       permanentAddress: safeGet(result, 'permanentAddress'),
       vehicleCategory: safeGet(result, 'vehicleCategory'),
@@ -129,22 +137,22 @@ async function saveVehicleData(decryptedResponse) {
       makerDescription: safeGet(result, 'vehicleManufacturerName'),
       makerModel: safeGet(result, 'model'),
       vehicleColor: safeGet(result, 'vehicleColour'),
-      fuelType: safeGet(result, 'fuelType'),
+      fuelType: safeGet(result, 'type'),
       normsType: safeGet(result, 'normsType'),
       bodyType: safeGet(result, 'bodyType'),
-      vehicleClass: safeGet(result, 'vehicleClass'),
+      vehicleClass: safeGet(result, 'class'),
       grossVehicleWeight: safeGet(result, 'grossVehicleWeight'),
       unladenWeight: safeGet(result, 'unladenWeight'),
       vehicleSeatCapacity: safeGet(result, 'vehicleSeatCapacity'),
       ownerCount: safeGet(result, 'ownerCount'),
-      rcFinancer: safeGet(result, 'financer'),
+      rcFinancer: safeGet(result, 'rcFinancer'),
       rcInsuranceCompany: safeGet(result, 'vehicleInsuranceCompanyName'),
       rcInsurancePolicyNumber: safeGet(result, 'vehicleInsurancePolicyNumber'),
-      rcInsuranceUpto: safeGet(result, 'insuranceValidity'),
-      rcRegistrationDate: safeGet(result, 'registrationDate'),
-      rcFitnessUpto: safeGet(result, 'fitnessValidity'),
-      rcTaxUpto: safeGet(result, 'taxValidity'),
-      rcPucUpto: safeGet(result, 'puccValidity'),
+      rcInsuranceUpto: safeGet(result, 'vehicleInsuranceUpto'),
+      rcRegistrationDate: safeGet(result, 'regDate'),
+      rcFitnessUpto: safeGet(result, 'rcExpiryDate'),
+      rcTaxUpto: safeGet(result, 'vehicleTaxUpto'),
+      rcPucUpto: safeGet(result, 'puccUpto'),
       rcPermitNo: safeGet(result, 'permitNumber'),
       rcPermitType: safeGet(result, 'permitType'),
       rcPermitIssueDate: safeGet(result, 'permitIssueDate'),
@@ -156,7 +164,7 @@ async function saveVehicleData(decryptedResponse) {
       rcRegAuthority: safeGet(result, 'regAuthority'),
       rcIsCommercial: safeGet(result, 'isCommercial'),
       rcNocDetails: safeGet(result, 'nocDetails'),
-      stateName: getNestedArrayValue(safeGet(result, 'state'), 0),
+      stateName: getNestedArrayValue(stateArray, 0),
       fullDataJson: result,
     };
 
